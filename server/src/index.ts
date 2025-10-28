@@ -6,6 +6,7 @@ import userAuthRoutes from "./routes/user/BaseRoutes";
 import staffRoutes from "./routes/user/StaffRoutes";
 import applicationPublicRoutes from "./routes/user/ApplicationPublicRoutes";
 import applicationAdminRoutes from "./routes/user/ApplicationAdminRoutes";
+import managedUsersRoutes from "./routes/user/ManagedUsersRoutes";
 
 dotenv.config();
 const app = express();
@@ -23,6 +24,7 @@ app.use("/api/auth", userAuthRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/applications", applicationPublicRoutes);
 app.use("/api/admin/applications", applicationAdminRoutes);
+app.use("/api/admin/users", managedUsersRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
