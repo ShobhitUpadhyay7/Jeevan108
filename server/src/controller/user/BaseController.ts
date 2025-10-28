@@ -7,6 +7,7 @@ import Caretaker from "../../model/user/caretaker";
 import Compounder from "../../model/user/compounder";
 import Admin from "../../model/user/admin";
 import Staff from "../../model/user/staff";
+import Patient from "../../model/user/patient";
 
 type RoleName = "User" | "Nurse" | "Caretaker" | "Compounder" | "Patient";
 
@@ -17,7 +18,7 @@ const roleToModel: Record<string, any> = {
   Nurse,
   Caretaker,
   Compounder,
-  // Patient model is optional; import and add when ready
+  Patient 
 };
 
 function getJwtSecret(): string {
