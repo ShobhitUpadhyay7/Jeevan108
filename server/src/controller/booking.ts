@@ -480,7 +480,7 @@ export async function cancelBooking(req: Request, res: Response) {
   try {
     const userId = (req as any).userId;
     const { id } = req.params;
-    const { reason } = req.body;
+    const reason = req.body?.reason; // Handle optional body for DELETE requests
 
     const booking = await Booking.findById(id);
     if (!booking) {
