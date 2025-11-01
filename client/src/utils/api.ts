@@ -40,6 +40,10 @@ export const API_PATHS = {
     createOrder: "/api/payments/create-order",
     verify: "/api/payments/verify",
   },
+  chatbot: {
+    base: "/api/chatbot",
+    chat: "/api/chatbot/chat",
+  },
 } as const;
 
 export function apiUrl(path: string): string {
@@ -81,6 +85,9 @@ export const API_URLS = {
   payments: {
     createOrder: () => apiUrl(API_PATHS.payments.createOrder),
     verify: () => apiUrl(API_PATHS.payments.verify),
+  },
+  chatbot: {
+    chat: () => apiUrl(API_PATHS.chatbot.chat),
   },
 } as const;
 
