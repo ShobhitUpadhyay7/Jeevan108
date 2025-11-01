@@ -35,6 +35,11 @@ export const API_PATHS = {
     byRole: (role: string) => `/api/admin/users/${role}`,
     byRoleAndId: (role: string, id: string | number) => `/api/admin/users/${role}/${id}`,
   },
+  payments: {
+    base: "/api/payments",
+    createOrder: "/api/payments/create-order",
+    verify: "/api/payments/verify",
+  },
 } as const;
 
 export function apiUrl(path: string): string {
@@ -72,6 +77,10 @@ export const API_URLS = {
     getByRoleAndId: (role: string, id: string | number) => apiUrl(API_PATHS.adminUsers.byRoleAndId(role, id)),
     updateByRoleAndId: (role: string, id: string | number) => apiUrl(API_PATHS.adminUsers.byRoleAndId(role, id)),
     deleteByRoleAndId: (role: string, id: string | number) => apiUrl(API_PATHS.adminUsers.byRoleAndId(role, id)),
+  },
+  payments: {
+    createOrder: () => apiUrl(API_PATHS.payments.createOrder),
+    verify: () => apiUrl(API_PATHS.payments.verify),
   },
 } as const;
 
