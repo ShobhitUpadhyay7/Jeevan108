@@ -21,12 +21,30 @@ function getRazorpayInstance(): Razorpay {
 // ✅ Create Razorpay order
 export const createOrder = async (req: Request, res: Response) => {
   try {
-    const { amount } = req.body;
+    const { amount, paidTo, serviceType, serviceReference, description, platformCommission } = req.body;
+    const userId = (req as any).userId; // From JWT middleware
+
+    if (!amount || !paidTo) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Amount and paidTo (professional ID) are required" 
+      });
+    }
+
+    // Calculate professional amount if commission is specified
+    const professionalAmount = platformCommission 
+      ? amount - (amount * platformCommission / 100)
+      : amount;
 
     const options = {
       amount: amount * 100, // Convert to paise
       currency: "INR",
       receipt: `receipt_${Date.now()}`,
+      notes: {
+        paidBy: userId,
+        paidTo: paidTo,
+        serviceType: serviceType || "",
+      },
     };
 
     const razorpay = getRazorpayInstance();
@@ -37,6 +55,13 @@ export const createOrder = async (req: Request, res: Response) => {
       amount,
       currency: order.currency,
       status: "created",
+      paidBy: userId,
+      paidTo,
+      serviceType,
+      serviceReference,
+      description,
+      platformCommission,
+      professionalAmount,
     });
 
     res.json({ success: true, order });
