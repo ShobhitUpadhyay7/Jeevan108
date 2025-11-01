@@ -23,12 +23,10 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // Serve static files from uploads directory
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
+// Connect to DB
 connectDB();
 
-app.get("/", (_req, res) => {
-  res.send("API is running...");
-});
-
+// ✅ API routes
 app.use("/api/auth", userAuthRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/applications", applicationPublicRoutes);
@@ -39,6 +37,24 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/bookings", bookingRoutes);
 
+// ✅ Serve frontend (React build)
+const __dirname1 = path.resolve();
+
+// Serve static files from client/dist (Vite build)
+app.use(express.static(path.join(__dirname1, "../client/dist")));
+
+// Catch-all route to serve index.html for React Router
+// Use middleware instead of wildcard route for Express 5 compatibility
+app.use((req, res, next) => {
+  // Skip if it's an API route or static file route
+  if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+    return next();
+  }
+  // Serve index.html for all other routes (React Router)
+  res.sendFile(path.join(__dirname1, "../client/dist/index.html"));
+});
+
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);

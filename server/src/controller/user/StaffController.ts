@@ -89,7 +89,7 @@ export async function updateStaff(req: Request, res: Response) {
     if (!currentStaff) return res.status(404).json({ message: "Not found" });
     
     // Process profile picture: save base64 image to disk and get URL
-    let processedProfilePicture: string | undefined = currentStaff.profilePicture; // Keep existing by default
+    let processedProfilePicture: string | undefined = currentStaff.profilePicture ?? undefined; // Keep existing by default
     if (profilePicture && typeof profilePicture === "string" && profilePicture.trim()) {
       // Check if it's a base64 string (new upload) or already a URL
       if (profilePicture.startsWith("data:image/") || profilePicture.startsWith("data:application/")) {
