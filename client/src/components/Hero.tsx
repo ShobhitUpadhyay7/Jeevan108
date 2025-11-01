@@ -1,5 +1,5 @@
 import Navbar from "./Navbar";
-import heroImg from "../assets/WhatsApp Image 2025-10-31 at 13.29.08_3221df55.jpg";
+import heroImg from "../assets/hero.avif";
 
 export default function Hero() {
   return (
