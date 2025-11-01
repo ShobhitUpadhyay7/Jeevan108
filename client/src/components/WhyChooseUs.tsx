@@ -1,4 +1,23 @@
 export default function WhyChooseUs() {
+  const stats = [
+    {
+      number: "10,000+",
+      label: "Patients"
+    },
+    {
+      number: "15+",
+      label: "Locations"
+    },
+    {
+      number: "24/7",
+      label: "Available"
+    },
+    {
+      number: "Verified",
+      label: "Professionals"
+    }
+  ];
+
   return (
     <section className="w-full bg-white py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-4 md:px-6">
@@ -11,34 +30,22 @@ export default function WhyChooseUs() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10 items-center justify-items-center">
-          <div className="w-40 h-40 md:w-48 md:h-48 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-center">
-            <div className="px-4">
-              <p className="text-gray-900 font-extrabold text-lg md:text-xl">10,000+</p>
-              <p className="text-gray-900 font-extrabold text-lg md:text-xl">Patients</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 items-center justify-items-center">
+          {stats.map((stat, index) => (
+            <div
+              key={index}
+              className={`w-40 h-40 md:w-48 md:h-48 rounded-full ${
+                index === 1 ? 'bg-teal-100' : 'bg-white border border-gray-300'
+              } shadow-sm flex flex-col items-center justify-center text-center`}
+            >
+              <p className="text-gray-900 font-extrabold text-xl md:text-2xl mb-2">
+                {stat.number}
+              </p>
+              <p className="text-gray-700 font-semibold text-sm md:text-base">
+                {stat.label}
+              </p>
             </div>
-          </div>
-
-          <div className="w-40 h-40 md:w-48 md:h-48 rounded-full bg-teal-200 flex items-center justify-center text-center">
-            <div className="px-6">
-              <p className="text-gray-900 font-extrabold text-base md:text-lg">Accessible in</p>
-              <p className="text-gray-900 font-extrabold text-base md:text-lg">15+ Locations</p>
-            </div>
-          </div>
-
-          <div className="w-40 h-40 md:w-48 md:h-48 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-center">
-            <div className="px-6">
-              <p className="text-gray-900 font-extrabold text-base md:text-lg">Available</p>
-              <p className="text-gray-900 font-extrabold text-base md:text-lg">24/7</p>
-            </div>
-          </div>
-
-          <div className="w-40 h-40 md:w-48 md:h-48 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center text-center">
-            <div className="px-6">
-              <p className="text-gray-900 font-extrabold text-base md:text-lg">Verified</p>
-              <p className="text-gray-900 font-extrabold text-base md:text-lg">Professionals</p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </section>
