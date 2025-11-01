@@ -5,6 +5,7 @@ import CreateStaffForm from "../components/admin/CreateStaffForm";
 import AdminSidebar from "../components/admin/AdminSidebar";
 import ApplicationList from "../components/admin/ApplicationList";
 import UserList from "../components/admin/UserList.tsx";
+import StaffList from "../components/admin/StaffList";
 
 export default function AdminDashboard() {
   const [name, setName] = useState<string>("");
@@ -40,6 +41,9 @@ export default function AdminDashboard() {
     }
     if (location.pathname === "/admin/users") {
       return <UserList />;
+    }
+    if (location.pathname === "/admin/staff") {
+      return <StaffList />;
     }
     // Placeholder for other routes
     return (

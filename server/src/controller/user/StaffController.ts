@@ -34,7 +34,7 @@ export async function createStaff(req: Request, res: Response) {
 
 export async function listStaff(_req: Request, res: Response) {
   try {
-    const items = await Staff.find().select("username email phone").lean();
+    const items = await Staff.find().select("username email phone address profilePicture").lean();
     return res.json(items);
   } catch (err) {
     return res
