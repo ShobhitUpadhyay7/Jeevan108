@@ -7,7 +7,14 @@ type LoginResponse = {
   message?: string;
 };
 
-// /api/auth/me does not include role; we'll verify admin by hitting an admin-only route
+type UserInfo = {
+  username?: string;
+  email?: string;
+  phone?: string;
+  role?: string;
+};
+
+type AllowedRole = "Admin" | "Staff" | "Nurse" | "Caretaker" | "Compounder";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -16,6 +23,21 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  function getRedirectPath(role: string | undefined): string {
+    switch (role) {
+      case "Admin":
+        return "/admin/dashboard";
+      case "Staff":
+        return "/admin/dashboard"; // Staff can also access admin dashboard (adjust if needed)
+      case "Nurse":
+      case "Caretaker":
+      case "Compounder":
+        return "/worker/dashboard"; // Workers go to worker dashboard
+      default:
+        return "/"; // Default to home
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -36,17 +58,32 @@ export default function AdminLogin() {
         throw new Error("Missing token in response");
       }
 
-      // Store token and verify admin via admin-protected endpoint
+      // Store token and fetch user info to get role
       localStorage.setItem("token", data.token);
-      const adminProbe = await fetch(API_URLS.staff.list(), {
+      
+      const userRes = await fetch(API_URLS.auth.me(), {
         headers: { Authorization: `Bearer ${data.token}` },
       });
-      if (!adminProbe.ok) {
+
+      if (!userRes.ok) {
         localStorage.removeItem("token");
-        throw new Error("Only Admin users can sign in here");
+        throw new Error("Failed to fetch user information");
       }
-      setSuccess("Logged in as Admin.");
-      navigate("/admin", { replace: true });
+
+      const userInfo: UserInfo = await userRes.json();
+      const role = userInfo.role as AllowedRole | undefined;
+
+      // Check if user has an allowed role
+      const allowedRoles: AllowedRole[] = ["Admin", "Staff", "Nurse", "Caretaker", "Compounder"];
+      if (!role || !allowedRoles.includes(role)) {
+        localStorage.removeItem("token");
+        throw new Error("Your account type is not authorized to access this login");
+      }
+
+      // Redirect based on role
+      const redirectPath = getRedirectPath(role);
+      setSuccess(`Logged in as ${role}.`);
+      navigate(redirectPath, { replace: true });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(message);
@@ -59,8 +96,8 @@ export default function AdminLogin() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-xl">
         <div className="mb-4">
-          <h1 className="text-2xl font-bold leading-none">Admin Login</h1>
-          <p className="text-xs text-slate-500 mt-1">Sign in with your admin account</p>
+          <h1 className="text-2xl font-bold leading-none">Login</h1>
+          <p className="text-xs text-slate-500 mt-1">Sign in with your account</p>
         </div>
 
         <label className="block text-xs font-medium text-slate-600 mt-4 mb-1">Email</label>

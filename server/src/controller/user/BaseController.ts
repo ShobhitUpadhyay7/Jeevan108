@@ -121,8 +121,24 @@ export async function me(req: Request, res: Response) {
   try {
     const userId = (req as any).userId as string | undefined;
     if (!userId) return res.status(401).json({ message: "Unauthorized" });
-    const user = await User.findById(userId).select("username email phone");
+    
+    // First get basic user info to check role
+    const user = await User.findById(userId).select("username email phone role");
     if (!user) return res.status(404).json({ message: "Not found" });
+    
+    // If user is a worker (Nurse, Caretaker, Compounder), fetch full profile with documents
+    const workerRoles = ["Nurse", "Caretaker", "Compounder"];
+    if (user.role && workerRoles.includes(user.role)) {
+      const Model = roleToModel[user.role];
+      if (Model) {
+        const fullProfile = await Model.findById(userId);
+        if (fullProfile) {
+          return res.json(fullProfile);
+        }
+      }
+    }
+    
+    // For other roles, return basic info
     return res.json(user);
   } catch (err) {
     return res
