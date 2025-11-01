@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import WorkerCard from "../components/WorkerCard";
+import BookingForm from "../components/BookingForm";
 import { API_URLS } from "../utils/api";
 
 type Worker = {
@@ -10,6 +11,10 @@ type Worker = {
   profilePicture?: string;
   role: string;
   createdAt?: string;
+  hourlyRate?: number;
+  dailyRate?: number;
+  weeklyRate?: number;
+  isAvailable?: boolean;
 };
 
 type RoleFilter = "all" | "Nurse" | "Caretaker" | "Compounder";
@@ -22,6 +27,8 @@ export default function BrowseProviders() {
   const [error, setError] = useState<string | null>(null);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [workerToBook, setWorkerToBook] = useState<Worker | null>(null);
 
   const fetchWorkers = useCallback(async () => {
     setLoading(true);
@@ -57,6 +64,24 @@ export default function BrowseProviders() {
   function handleWorkerClick(worker: Worker) {
     setSelectedWorker(worker);
     setShowDetailsModal(true);
+  }
+
+  function handleBookNow(worker: Worker) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to book a service");
+      // Optionally redirect to login
+      return;
+    }
+    setWorkerToBook(worker);
+    setShowBookingModal(true);
+  }
+
+  function handleBookingSuccess() {
+    setShowBookingModal(false);
+    setWorkerToBook(null);
+    alert("Booking created successfully! Check your bookings from the navbar.");
+    // Optionally navigate to bookings page
   }
 
   function getRoleCount(role: RoleFilter): number {
@@ -179,6 +204,7 @@ export default function BrowseProviders() {
                   key={worker._id}
                   worker={worker}
                   onClick={() => handleWorkerClick(worker)}
+                  onBookNow={() => handleBookNow(worker)}
                 />
               ))}
             </div>
@@ -330,14 +356,55 @@ export default function BrowseProviders() {
                 </div>
               </div>
 
+              {/* Pricing Information */}
+              {(selectedWorker.hourlyRate || selectedWorker.dailyRate || selectedWorker.weeklyRate) && (
+                <div className="mb-6 p-4 bg-teal-50 rounded-lg border border-teal-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Pricing</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {selectedWorker.hourlyRate && (
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-teal-600">₹{selectedWorker.hourlyRate}</div>
+                        <div className="text-sm text-gray-600">per hour</div>
+                      </div>
+                    )}
+                    {selectedWorker.dailyRate && (
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-teal-600">₹{selectedWorker.dailyRate}</div>
+                        <div className="text-sm text-gray-600">per day</div>
+                      </div>
+                    )}
+                    {selectedWorker.weeklyRate && (
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-teal-600">₹{selectedWorker.weeklyRate}</div>
+                        <div className="text-sm text-gray-600">per week</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    const token = localStorage.getItem("token");
+                    if (!token) {
+                      alert("Please login to book a service");
+                      return;
+                    }
+                    setShowDetailsModal(false);
+                    handleBookNow(selectedWorker);
+                  }}
+                  className="flex-1 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                  Book Now
+                </button>
                 <button
                   onClick={() => {
                     window.location.href = `tel:${selectedWorker.phone}`;
                   }}
-                  className="flex-1 px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors"
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
                 >
-                  Contact Provider
+                  Contact
                 </button>
                 <button
                   onClick={() => setShowDetailsModal(false)}
@@ -350,7 +417,60 @@ export default function BrowseProviders() {
           </div>
         </div>
       )}
+
+      {/* Booking Modal */}
+      {showBookingModal && workerToBook && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={() => {
+            setShowBookingModal(false);
+            setWorkerToBook(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-start justify-between mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Book Service</h2>
+                  <p className="text-gray-600 mt-1">
+                    Booking with <span className="font-semibold">{workerToBook.username}</span> ({workerToBook.role})
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowBookingModal(false);
+                    setWorkerToBook(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <BookingForm
+                worker={workerToBook}
+                onSuccess={handleBookingSuccess}
+                onCancel={() => {
+                  setShowBookingModal(false);
+                  setWorkerToBook(null);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
+
 

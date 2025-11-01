@@ -49,6 +49,16 @@ export const API_PATHS = {
     base: "/api/chatbot",
     chat: "/api/chatbot/chat",
   },
+  bookings: {
+    base: "/api/bookings",
+    create: "/api/bookings",
+    patientBookings: "/api/bookings/patient/me",
+    workerBookings: "/api/bookings/worker/me",
+    byId: (id: string) => `/api/bookings/${id}`,
+    updateStatus: (id: string) => `/api/bookings/${id}/status`,
+    cancel: (id: string) => `/api/bookings/${id}`,
+    all: "/api/bookings",
+  },
 } as const;
 
 export function apiUrl(path: string): string {
@@ -98,6 +108,15 @@ export const API_URLS = {
     listAll: () => apiUrl(API_PATHS.publicWorkers.base),
     listByRole: (role: string) => apiUrl(API_PATHS.publicWorkers.byRole(role)),
     getById: (role: string, id: string | number) => apiUrl(API_PATHS.publicWorkers.byRoleAndId(role, id)),
+  },
+  bookings: {
+    create: () => apiUrl(API_PATHS.bookings.create),
+    getPatientBookings: () => apiUrl(API_PATHS.bookings.patientBookings),
+    getWorkerBookings: () => apiUrl(API_PATHS.bookings.workerBookings),
+    getById: (id: string) => apiUrl(API_PATHS.bookings.byId(id)),
+    updateStatus: (id: string) => apiUrl(API_PATHS.bookings.updateStatus(id)),
+    cancel: (id: string) => apiUrl(API_PATHS.bookings.cancel(id)),
+    getAll: () => apiUrl(API_PATHS.bookings.all),
   },
 } as const;
 

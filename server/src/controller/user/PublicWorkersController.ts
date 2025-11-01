@@ -27,16 +27,16 @@ export async function listPublicWorkers(req: Request, res: Response) {
       }
       
       const workers = await Model.find()
-        .select("username phone address profilePicture role createdAt")
+        .select("username phone address profilePicture role createdAt hourlyRate dailyRate weeklyRate isAvailable")
         .lean();
       
       return res.json(workers);
     } else {
       // Get all workers (combine all three types)
       const [nurses, caretakers, compounders] = await Promise.all([
-        Nurse.find().select("username phone address profilePicture role createdAt").lean(),
-        Caretaker.find().select("username phone address profilePicture role createdAt").lean(),
-        Compounder.find().select("username phone address profilePicture role createdAt").lean(),
+        Nurse.find().select("username phone address profilePicture role createdAt hourlyRate dailyRate weeklyRate isAvailable").lean(),
+        Caretaker.find().select("username phone address profilePicture role createdAt hourlyRate dailyRate weeklyRate isAvailable").lean(),
+        Compounder.find().select("username phone address profilePicture role createdAt hourlyRate dailyRate weeklyRate isAvailable").lean(),
       ]);
       
       const allWorkers = [...nurses, ...caretakers, ...compounders];
@@ -58,7 +58,7 @@ export async function getPublicWorkerById(req: Request, res: Response) {
     }
     
     const worker = await Model.findById(id)
-      .select("username phone address profilePicture role createdAt")
+      .select("username phone address profilePicture role createdAt hourlyRate dailyRate weeklyRate isAvailable")
       .lean();
     
     if (!worker) {

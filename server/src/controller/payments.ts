@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import mongoose from "mongoose";
 import Payment from "../model/payments";
 
 // Lazy initialization of Razorpay to ensure env vars are loaded
@@ -64,7 +65,12 @@ export const createOrder = async (req: Request, res: Response) => {
       professionalAmount,
     });
 
-    res.json({ success: true, order });
+    // Return order along with Razorpay key ID for frontend
+    res.json({ 
+      success: true, 
+      order,
+      keyId: process.env.RAZORPAY_KEY_ID // Safe to expose key ID
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: "Error creating Razorpay order" });
@@ -93,7 +99,25 @@ export const verifyPayment = async (req: Request, res: Response) => {
       payment.razorpay_payment_id = razorpay_payment_id;
       payment.razorpay_signature = razorpay_signature;
       await payment.save();
-      res.json({ success: true, message: "Payment verified successfully" });
+
+      // If payment has a serviceReference (booking ID), update booking payment status
+      if (payment.serviceReference) {
+        try {
+          const Booking = (await import("../model/booking")).default;
+          const booking = await Booking.findById(payment.serviceReference);
+          if (booking) {
+            booking.paymentId = payment._id as mongoose.Types.ObjectId;
+            booking.paymentStatus = "paid";
+            booking.status = "confirmed"; // Auto-confirm booking after payment
+            await booking.save();
+          }
+        } catch (bookingError) {
+          console.error("Error updating booking payment status:", bookingError);
+          // Don't fail payment verification if booking update fails
+        }
+      }
+
+      res.json({ success: true, message: "Payment verified successfully", payment });
     } else {
       payment.status = "failed";
       await payment.save();

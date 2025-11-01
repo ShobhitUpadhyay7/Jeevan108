@@ -11,6 +11,7 @@ import managedUsersRoutes from "./routes/user/ManagedUsersRoutes";
 import publicWorkersRoutes from "./routes/user/PublicWorkersRoutes";
 import paymentRoutes from "./routes/payments";
 import chatbotRoutes from "./routes/chatbot";
+import bookingRoutes from "./routes/booking";
 
 dotenv.config();
 const app = express();
@@ -36,6 +37,7 @@ app.use("/api/admin/users", managedUsersRoutes);
 app.use("/api", publicWorkersRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

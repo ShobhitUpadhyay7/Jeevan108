@@ -33,7 +33,18 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
           >
             Apply
           </span>
-          <span className="font-extrabold text-[20px] cursor-pointer">Check Status</span>
+          <span 
+            onClick={() => navigate("/bookings")}
+            className="font-extrabold text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
+          >
+            Check Status
+          </span>
+          <span 
+            onClick={() => navigate("/signup")}
+            className="font-extrabold text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
+          >
+            Sign Up
+          </span>
           <button
             onClick={() => navigate("/admin/login")}
             className="bg-teal-400 text-white rounded-full px-6 py-2 font-extrabold cursor-pointer"

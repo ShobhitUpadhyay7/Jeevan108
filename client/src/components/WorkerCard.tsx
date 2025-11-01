@@ -6,14 +6,19 @@ type Worker = {
   profilePicture?: string;
   role: string;
   createdAt?: string;
+  hourlyRate?: number;
+  dailyRate?: number;
+  weeklyRate?: number;
+  isAvailable?: boolean;
 };
 
 type WorkerCardProps = {
   worker: Worker;
   onClick?: () => void;
+  onBookNow?: () => void;
 };
 
-export default function WorkerCard({ worker, onClick }: WorkerCardProps) {
+export default function WorkerCard({ worker, onClick, onBookNow }: WorkerCardProps) {
   function getRoleDisplayName(role: string): string {
     switch (role) {
       case "Nurse":
@@ -142,12 +147,47 @@ export default function WorkerCard({ worker, onClick }: WorkerCardProps) {
           )}
         </div>
 
-        {/* Action Button */}
-        {onClick && (
-          <button className="w-full mt-4 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors">
-            View Details
-          </button>
+        {/* Pricing Info */}
+        {worker.hourlyRate && (
+          <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+            <div className="text-sm text-gray-600 mb-1">Starting from</div>
+            <div className="text-lg font-bold text-teal-600">₹{worker.hourlyRate}/hour</div>
+          </div>
         )}
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 mt-4">
+          {onClick && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+              className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-lg transition-colors"
+            >
+              View Details
+            </button>
+          )}
+          {onBookNow && worker.isAvailable !== false && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBookNow();
+              }}
+              className="flex-1 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-lg transition-colors"
+            >
+              Book Now
+            </button>
+          )}
+          {worker.isAvailable === false && (
+            <button
+              disabled
+              className="flex-1 px-4 py-2 bg-gray-300 text-gray-500 font-semibold rounded-lg cursor-not-allowed"
+            >
+              Not Available
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

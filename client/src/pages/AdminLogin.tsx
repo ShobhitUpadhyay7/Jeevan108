@@ -14,7 +14,7 @@ type UserInfo = {
   role?: string;
 };
 
-type AllowedRole = "Admin" | "Staff" | "Nurse" | "Caretaker" | "Compounder";
+type AllowedRole = "Admin" | "Staff" | "Nurse" | "Caretaker" | "Compounder" | "Patient";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
@@ -34,6 +34,8 @@ export default function AdminLogin() {
       case "Caretaker":
       case "Compounder":
         return "/worker/dashboard"; // Workers go to worker dashboard
+      case "Patient":
+        return "/bookings"; // Patients go to bookings page
       default:
         return "/"; // Default to home
     }
@@ -74,7 +76,7 @@ export default function AdminLogin() {
       const role = userInfo.role as AllowedRole | undefined;
 
       // Check if user has an allowed role
-      const allowedRoles: AllowedRole[] = ["Admin", "Staff", "Nurse", "Caretaker", "Compounder"];
+      const allowedRoles: AllowedRole[] = ["Admin", "Staff", "Nurse", "Caretaker", "Compounder", "Patient"];
       if (!role || !allowedRoles.includes(role)) {
         localStorage.removeItem("token");
         throw new Error("Your account type is not authorized to access this login");
@@ -138,6 +140,20 @@ export default function AdminLogin() {
         >
           {loading ? "Signing in..." : "Sign in"}
         </button>
+
+        <div className="mt-4 text-center text-sm text-slate-600">
+          Don't have an account?{" "}
+          <a
+            href="/signup"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/signup");
+            }}
+            className="text-teal-600 hover:text-teal-700 font-semibold"
+          >
+            Sign up as Patient
+          </a>
+        </div>
       </form>
     </div>
   );
