@@ -16,6 +16,7 @@ const PendingApplicationSchema = new mongoose.Schema(
     documents: {
       governmentId: { type: String },
       nursingRegistrationCertificate: { type: String },
+      trainingCertificate: { type: String },
       policeVerificationCertificate: { type: String },
     },
     status: {

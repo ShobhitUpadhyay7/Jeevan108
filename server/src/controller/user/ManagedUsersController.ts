@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import Nurse from "../../model/user/nurse";
 import Caretaker from "../../model/user/caretaker";
 import Compounder from "../../model/user/compounder";
+import { deleteFile } from "../../utils/upload";
 
 const roleToModel: Record<string, any> = {
   Nurse,
@@ -64,12 +65,71 @@ export async function updateUserByRole(req: Request, res: Response) {
   }
 }
 
+// Helper function to extract filename from URL
+function extractFilenameFromUrl(url: string): string | null {
+  if (!url) return null;
+  try {
+    // URL format: http://localhost:7001/uploads/documents/filename.ext
+    const parts = url.split("/uploads/documents/");
+    if (parts.length === 2) {
+      return parts[1];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper function to delete user documents
+async function deleteUserDocuments(user: any, role: string): Promise<void> {
+  const documentsToDelete: string[] = [];
+  
+  // Extract document URLs based on role
+  if (role === "Nurse") {
+    if (user.governmentId) documentsToDelete.push(user.governmentId);
+    if (user.nursingRegistrationCertificate) documentsToDelete.push(user.nursingRegistrationCertificate);
+    if (user.policeVerificationCertificate) documentsToDelete.push(user.policeVerificationCertificate);
+  } else if (role === "Caretaker") {
+    if (user.governmentId) documentsToDelete.push(user.governmentId);
+    if (user.policeVerificationCertificate) documentsToDelete.push(user.policeVerificationCertificate);
+  } else if (role === "Compounder") {
+    if (user.governmentId) documentsToDelete.push(user.governmentId);
+    if (user.trainingCertificate) documentsToDelete.push(user.trainingCertificate);
+    if (user.policeVerificationCertificate) documentsToDelete.push(user.policeVerificationCertificate);
+  }
+  
+  // Delete each document file
+  const deletePromises = documentsToDelete.map(async (url) => {
+    const filename = extractFilenameFromUrl(url);
+    if (filename) {
+      try {
+        await deleteFile(filename, "document");
+      } catch (err) {
+        // Log error but don't fail the entire deletion
+        console.error(`Failed to delete document file ${filename}:`, err);
+      }
+    }
+  });
+  
+  await Promise.all(deletePromises);
+}
+
 export async function deleteUserByRole(req: Request, res: Response) {
   try {
     const Model = getModel(req.params.role);
     if (!Model) return res.status(400).json({ message: "Invalid role" });
-    const deleted = await Model.findByIdAndDelete(req.params.id);
-    if (!deleted) return res.status(404).json({ message: "Not found" });
+    
+    // Find the user first to get document URLs before deletion
+    const user = await Model.findById(req.params.id);
+    if (!user) return res.status(404).json({ message: "Not found" });
+    
+    // Delete user's documents
+    const role = req.params.role.charAt(0).toUpperCase() + req.params.role.slice(1).toLowerCase();
+    await deleteUserDocuments(user, role);
+    
+    // Delete the user from database
+    await Model.findByIdAndDelete(req.params.id);
+    
     return res.status(204).send();
   } catch (err) {
     return res

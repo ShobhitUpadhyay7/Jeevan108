@@ -15,9 +15,19 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
         </div>
 
         <div className="ml-auto flex items-center gap-9">
-          <span className="bg-teal-400 text-white rounded-full px-6 py-2 font-extrabold">Home</span>
+          <span 
+            onClick={() => navigate("/")}
+            className="bg-teal-400 text-white rounded-full px-6 py-2 font-extrabold cursor-pointer"
+          >
+            Home
+          </span>
           <span className="font-extrabold text-[20px] cursor-pointer">Browse Providers</span>
-          <span className="font-extrabold text-[20px] cursor-pointer">Apply</span>
+          <span 
+            onClick={() => navigate("/apply")}
+            className="font-extrabold text-[20px] cursor-pointer"
+          >
+            Apply
+          </span>
           <span className="font-extrabold text-[20px] cursor-pointer">Check Status</span>
           <button
             onClick={() => navigate("/admin/login")}

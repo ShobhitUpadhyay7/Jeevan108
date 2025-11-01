@@ -14,6 +14,7 @@ type Application = {
   documents?: {
     governmentId?: string;
     nursingRegistrationCertificate?: string;
+    trainingCertificate?: string;
     policeVerificationCertificate?: string;
   };
   rejectionReason?: string;
@@ -279,6 +280,16 @@ export default function ApplicationList() {
                                 className="text-sm text-teal-600 hover:underline block"
                               >
                                 Nursing Registration Certificate
+                              </a>
+                            )}
+                            {selectedApp.documents.trainingCertificate && (
+                              <a
+                                href={selectedApp.documents.trainingCertificate}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm text-teal-600 hover:underline block"
+                              >
+                                Training Certificate
                               </a>
                             )}
                             {selectedApp.documents.policeVerificationCertificate && (
