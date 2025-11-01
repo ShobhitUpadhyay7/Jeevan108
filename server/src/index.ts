@@ -11,6 +11,7 @@ import managedUsersRoutes from "./routes/user/ManagedUsersRoutes";
 import publicWorkersRoutes from "./routes/user/PublicWorkersRoutes";
 import paymentRoutes from "./routes/payments";
 import chatbotRoutes from "./routes/chatbot";
+import reviewRoutes from "./routes/reviews";
 import bookingRoutes from "./routes/booking";
 
 dotenv.config();
@@ -78,6 +79,7 @@ app.use("/api/admin/users", managedUsersRoutes);
 app.use("/api", publicWorkersRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/chatbot", chatbotRoutes);
+app.use("/api/reviews", reviewRoutes);
 app.use("/api/bookings", bookingRoutes);
 
 // ✅ Serve frontend (React build)

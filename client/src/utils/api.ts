@@ -60,6 +60,13 @@ export const API_PATHS = {
     cancel: (id: string) => `/api/bookings/${id}`,
     all: "/api/bookings",
   },
+  reviews: {
+    base: "/api/reviews",
+    submit: (bookingId: string) => `/api/reviews/booking/${bookingId}`,
+    getBookingReview: (bookingId: string) => `/api/reviews/booking/${bookingId}`,
+    getWorkerReviews: (workerId: string) => `/api/reviews/worker/${workerId}`,
+    update: (reviewId: string) => `/api/reviews/${reviewId}`,
+  },
 } as const;
 
 export function apiUrl(path: string): string {
@@ -119,6 +126,12 @@ export const API_URLS = {
     updateStatus: (id: string) => apiUrl(API_PATHS.bookings.updateStatus(id)),
     cancel: (id: string) => apiUrl(API_PATHS.bookings.cancel(id)),
     getAll: () => apiUrl(API_PATHS.bookings.all),
+  },
+  reviews: {
+    submit: (bookingId: string) => apiUrl(API_PATHS.reviews.submit(bookingId)),
+    getBookingReview: (bookingId: string) => apiUrl(API_PATHS.reviews.getBookingReview(bookingId)),
+    getWorkerReviews: (workerId: string) => apiUrl(API_PATHS.reviews.getWorkerReviews(workerId)),
+    update: (reviewId: string) => apiUrl(API_PATHS.reviews.update(reviewId)),
   },
 } as const;
 

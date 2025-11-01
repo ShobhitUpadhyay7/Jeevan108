@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
+import ReviewModal from "../components/ReviewModal";
 
 type Booking = {
   _id: string;
@@ -39,6 +40,18 @@ export default function BookingStatus() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [bookingForReview, setBookingForReview] = useState<Booking | null>(null);
+  const [existingReview, setExistingReview] = useState<{
+    _id: string;
+    rating: number;
+    comment?: string;
+  } | null>(null);
+  const [bookingsWithReviews, setBookingsWithReviews] = useState<Record<string, {
+    _id: string;
+    rating: number;
+    comment?: string;
+  }>>({});
 
   const token = localStorage.getItem("token");
 
@@ -65,6 +78,35 @@ export default function BookingStatus() {
       const data = await response.json();
       const bookingsData = data.bookings || [];
       setBookings(bookingsData);
+
+      // Fetch reviews for completed bookings
+      const completedBookings = bookingsData.filter((b: Booking) => b.status === "completed");
+      const reviewsMap: Record<string, {
+        _id: string;
+        rating: number;
+        comment?: string;
+      }> = {};
+      
+      for (const booking of completedBookings) {
+        try {
+          const reviewResponse = await fetch(
+            API_URLS.reviews.getBookingReview(booking._id),
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          const reviewData = await reviewResponse.json();
+          if (reviewData.success && reviewData.review) {
+            reviewsMap[booking._id] = reviewData.review;
+          }
+        } catch {
+          // Ignore errors for individual review fetches
+        }
+      }
+      
+      setBookingsWithReviews(reviewsMap);
     } catch (err) {
       console.error("Error fetching bookings:", err);
       setError(err instanceof Error ? err.message : "Failed to load bookings");
@@ -332,6 +374,19 @@ export default function BookingStatus() {
                     >
                       View Details
                     </button>
+                    {booking.status === "completed" && (
+                      <button
+                        onClick={() => {
+                          const review = bookingsWithReviews[booking._id];
+                          setExistingReview(review || null);
+                          setBookingForReview(booking);
+                          setShowReviewModal(true);
+                        }}
+                        className="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold rounded-lg transition-colors text-sm"
+                      >
+                        {bookingsWithReviews[booking._id] ? "Edit Review" : "Leave Review"}
+                      </button>
+                    )}
                     {booking.status !== "cancelled" &&
                       booking.status !== "completed" &&
                       booking.status !== "in_progress" && (
@@ -488,6 +543,20 @@ export default function BookingStatus() {
 
                 {/* Actions */}
                 <div className="flex gap-3 pt-4 border-t border-gray-200">
+                  {selectedBooking.status === "completed" && (
+                    <button
+                      onClick={() => {
+                        const review = bookingsWithReviews[selectedBooking._id];
+                        setExistingReview(review || null);
+                        setBookingForReview(selectedBooking);
+                        setShowReviewModal(true);
+                        setShowDetailsModal(false);
+                      }}
+                      className="px-6 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold rounded-lg transition-colors"
+                    >
+                      {bookingsWithReviews[selectedBooking._id] ? "Edit Review" : "Leave a Review"}
+                    </button>
+                  )}
                   {selectedBooking.status !== "cancelled" &&
                     selectedBooking.status !== "completed" &&
                     selectedBooking.status !== "in_progress" && (
@@ -511,6 +580,27 @@ export default function BookingStatus() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Review Modal */}
+      {showReviewModal && bookingForReview && (
+        <ReviewModal
+          bookingId={bookingForReview._id}
+          workerName={bookingForReview.workerId.username}
+          onClose={() => {
+            setShowReviewModal(false);
+            setBookingForReview(null);
+            setExistingReview(null);
+          }}
+          onSuccess={() => {
+            fetchBookings();
+            // Refresh the page to update ratings on worker cards
+            setTimeout(() => {
+              window.location.reload();
+            }, 1000);
+          }}
+          existingReview={existingReview || undefined}
+        />
       )}
     </>
   );

@@ -3,6 +3,7 @@ import WorkerCard from "../components/WorkerCard";
 import BookingForm from "../components/BookingForm";
 import { API_URLS } from "../utils/api";
 import FindWithAI from "../components/FindWithAI";
+import StarRating from "../components/StarRating";
 
 type Worker = {
   _id: string;
@@ -16,6 +17,18 @@ type Worker = {
   dailyRate?: number;
   weeklyRate?: number;
   isAvailable?: boolean;
+  averageRating?: number;
+  reviewCount?: number;
+};
+
+type Review = {
+  _id: string;
+  rating: number;
+  comment?: string;
+  patientId: {
+    username: string;
+  };
+  createdAt: string;
 };
 
 type RoleFilter = "all" | "Nurse" | "Caretaker" | "Compounder";
@@ -30,6 +43,8 @@ export default function BrowseProviders() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [workerToBook, setWorkerToBook] = useState<Worker | null>(null);
+  const [workerReviews, setWorkerReviews] = useState<Review[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiRecommendedWorkers, setAIRecommendedWorkers] = useState<Worker[]>([]);
   const [isAIMode, setIsAIMode] = useState(false);
@@ -66,9 +81,24 @@ export default function BrowseProviders() {
     }
   }, [selectedRole, workers]);
 
-  function handleWorkerClick(worker: Worker) {
+  async function handleWorkerClick(worker: Worker) {
     setSelectedWorker(worker);
     setShowDetailsModal(true);
+    
+    // Fetch reviews for this worker
+    setLoadingReviews(true);
+    try {
+      const response = await fetch(API_URLS.reviews.getWorkerReviews(worker._id));
+      const data = await response.json();
+      if (data.success) {
+        setWorkerReviews(data.reviews || []);
+      }
+    } catch (err) {
+      console.error("Error fetching reviews:", err);
+      setWorkerReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
   }
 
   function handleBookNow(worker: Worker) {
@@ -336,9 +366,23 @@ export default function BrowseProviders() {
                 )}
 
                 <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                    {selectedWorker.username}
-                  </h3>
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-2xl font-bold text-gray-900">
+                      {selectedWorker.username}
+                    </h3>
+                    {(selectedWorker.averageRating || 0) > 0 && (
+                      <div className="flex flex-col items-end">
+                        <StarRating
+                          rating={selectedWorker.averageRating || 0}
+                          size="md"
+                          showNumber
+                        />
+                        <span className="text-sm text-gray-500 mt-1">
+                          {selectedWorker.reviewCount || 0} {selectedWorker.reviewCount === 1 ? "review" : "reviews"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <div className="inline-block px-3 py-1 rounded-full text-sm font-semibold bg-teal-100 text-teal-700 mb-4">
                     {selectedWorker.role === "Nurse"
                       ? "Registered Nurse"
@@ -438,6 +482,47 @@ export default function BrowseProviders() {
                   </div>
                 </div>
               )}
+
+              {/* Reviews Section */}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Reviews ({selectedWorker.reviewCount || 0})
+                </h3>
+                {loadingReviews ? (
+                  <div className="text-center py-8">
+                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600"></div>
+                    <p className="text-gray-600 mt-2">Loading reviews...</p>
+                  </div>
+                ) : workerReviews.length > 0 ? (
+                  <div className="space-y-4 max-h-64 overflow-y-auto">
+                    {workerReviews.map((review) => (
+                      <div
+                        key={review._id}
+                        className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {review.patientId?.username || "Anonymous"}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {new Date(review.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <StarRating rating={review.rating} size="sm" />
+                        </div>
+                        {review.comment && (
+                          <p className="text-sm text-gray-700 mt-2">{review.comment}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                    <p className="text-gray-500">No reviews yet. Be the first to review!</p>
+                  </div>
+                )}
+              </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button

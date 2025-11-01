@@ -1,3 +1,5 @@
+import StarRating from "./StarRating";
+
 type Worker = {
   _id: string;
   username: string;
@@ -10,6 +12,8 @@ type Worker = {
   dailyRate?: number;
   weeklyRate?: number;
   isAvailable?: boolean;
+  averageRating?: number;
+  reviewCount?: number;
 };
 
 type WorkerCardProps = {
@@ -81,7 +85,17 @@ export default function WorkerCard({ worker, onClick, onBookNow }: WorkerCardPro
 
       {/* Content Section */}
       <div className="p-6">
-        <h3 className="text-xl font-bold text-gray-900 mb-2">{worker.username}</h3>
+        <div className="flex items-start justify-between mb-2">
+          <h3 className="text-xl font-bold text-gray-900">{worker.username}</h3>
+          {(worker.averageRating || 0) > 0 && (
+            <div className="flex items-center gap-1">
+              <StarRating rating={worker.averageRating || 0} size="sm" showNumber />
+              <span className="text-xs text-gray-500">
+                ({worker.reviewCount || 0})
+              </span>
+            </div>
+          )}
+        </div>
 
         {/* Contact Info */}
         <div className="space-y-2 mb-4">

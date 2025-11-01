@@ -13,6 +13,15 @@ const nurseSchema = new mongoose.Schema({
   
   // Availability (optional - can be extended later)
   isAvailable: { type: Boolean, default: true },
+  
+  // Ratings and Reviews (computed from Review model)
+  // These will be calculated dynamically, but we can cache them
+  averageRating: { type: Number, default: 0, min: 0, max: 5 },
+  reviewCount: { type: Number, default: 0, min: 0 },
+}, {
+  // Virtual for getting reviews (will be populated as needed)
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Create nurse model using discriminator

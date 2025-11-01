@@ -13,6 +13,13 @@ const caretakerSchema = new mongoose.Schema({
   
   // Availability (optional - can be extended later)
   isAvailable: { type: Boolean, default: true },
+  
+  // Ratings and Reviews (computed from Review model)
+  averageRating: { type: Number, default: 0, min: 0, max: 5 },
+  reviewCount: { type: Number, default: 0, min: 0 },
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
 });
 
 // Create caretaker model using discriminator
