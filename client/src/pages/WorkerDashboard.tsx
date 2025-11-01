@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
+import AddressAutocomplete from "../components/AddressAutocomplete";
 
 type WorkerProfile = {
   _id: string;
@@ -115,9 +116,27 @@ export default function WorkerDashboard() {
     }
   }
 
-  async function updateBookingStatus(bookingId: string, status: string) {
+  // Check if service can be completed (must be at or after end date/time)
+  function canCompleteService(booking: Booking): boolean {
+    const now = new Date();
+    const endDate = new Date(booking.endDate);
+    const [endHours, endMinutes] = booking.endTime.split(":").map(Number);
+    endDate.setHours(endHours, endMinutes, 0, 0);
+    return now >= endDate;
+  }
+
+  async function updateBookingStatus(bookingId: string, status: string, booking?: Booking) {
     const token = localStorage.getItem("token");
     if (!token) return;
+
+    // Validation check for completing service
+    if (status === "completed" && booking && !canCompleteService(booking)) {
+      const endDateTime = new Date(booking.endDate);
+      const [endHours, endMinutes] = booking.endTime.split(":").map(Number);
+      endDateTime.setHours(endHours, endMinutes, 0, 0);
+      alert(`You can only complete the service on or after ${endDateTime.toLocaleString()}`);
+      return;
+    }
 
     try {
       const response = await fetch(API_URLS.bookings.updateStatus(bookingId), {
@@ -561,12 +580,15 @@ export default function WorkerDashboard() {
                             )}
                             {booking.status === "confirmed" && (
                               <>
-                                <button
-                                  onClick={() => updateBookingStatus(booking._id, "in_progress")}
-                                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-lg transition-colors"
-                                >
-                                  Start Service
-                                </button>
+                                {/* Only show Complete Service button after end time */}
+                                {canCompleteService(booking) && (
+                                  <button
+                                    onClick={() => updateBookingStatus(booking._id, "completed", booking)}
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                                  >
+                                    Complete Service
+                                  </button>
+                                )}
                                 <button
                                   onClick={async () => {
                                     if (confirm("Are you sure you want to cancel this booking?")) {
@@ -578,7 +600,6 @@ export default function WorkerDashboard() {
                                         }
 
                                         const url = API_URLS.bookings.cancel(booking._id);
-                                        console.log("Cancelling booking:", booking._id, "URL:", url);
 
                                         const response = await fetch(url, {
                                           method: "DELETE",
@@ -587,8 +608,6 @@ export default function WorkerDashboard() {
                                             "Content-Type": "application/json",
                                           },
                                         });
-
-                                        console.log("Response status:", response.status);
 
                                         // Try to parse response as JSON, but handle if it's not
                                         let data;
@@ -624,8 +643,18 @@ export default function WorkerDashboard() {
                             {booking.status === "in_progress" && (
                               <>
                                 <button
-                                  onClick={() => updateBookingStatus(booking._id, "completed")}
-                                  className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                                  onClick={() => updateBookingStatus(booking._id, "completed", booking)}
+                                  disabled={!canCompleteService(booking)}
+                                  className={`px-4 py-2 text-white text-sm font-semibold rounded-lg transition-colors ${
+                                    canCompleteService(booking)
+                                      ? "bg-green-600 hover:bg-green-700"
+                                      : "bg-gray-400 cursor-not-allowed"
+                                  }`}
+                                  title={
+                                    !canCompleteService(booking)
+                                      ? `Service can only be completed on or after ${new Date(booking.endDate).toLocaleDateString()} at ${booking.endTime}`
+                                      : "Mark service as completed"
+                                  }
                                 >
                                   Complete Service
                                 </button>
@@ -845,9 +874,9 @@ export default function WorkerDashboard() {
                         </div>
                         <div className="md:col-span-2">
                           <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-                          <textarea
-                            value={editForm.address}
-                            onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                          <AddressAutocomplete
+                            value={editForm.address || ""}
+                            onChange={(address) => setEditForm({ ...editForm, address })}
                             rows={3}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                           />

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { API_URLS } from "../utils/api";
+import AddressAutocomplete from "./AddressAutocomplete";
 
 type Worker = {
   _id: string;
@@ -412,15 +413,15 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Service Address *
         </label>
-        <textarea
+        <AddressAutocomplete
+          value={formData.serviceAddress}
+          onChange={(address) =>
+            setFormData((prev) => ({ ...prev, serviceAddress: address }))
+          }
+          placeholder="Enter the address where service will be provided"
+          className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${userProfile ? "bg-gray-50" : ""}`}
           required
           rows={3}
-          value={formData.serviceAddress}
-          onChange={(e) =>
-            setFormData((prev) => ({ ...prev, serviceAddress: e.target.value }))
-          }
-          className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${userProfile ? "bg-gray-50" : ""}`}
-          placeholder="Enter the address where service will be provided"
         />
         {userProfile && formData.serviceAddress && (
           <p className="text-xs text-gray-500 mt-1">Auto-filled from your profile</p>

@@ -48,6 +48,7 @@ export const API_PATHS = {
   chatbot: {
     base: "/api/chatbot",
     chat: "/api/chatbot/chat",
+    recommendWorkers: "/api/chatbot/recommend-workers",
   },
   bookings: {
     base: "/api/bookings",
@@ -103,6 +104,7 @@ export const API_URLS = {
   },
   chatbot: {
     chat: () => apiUrl(API_PATHS.chatbot.chat),
+    recommendWorkers: () => apiUrl(API_PATHS.chatbot.recommendWorkers),
   },
   publicWorkers: {
     listAll: () => apiUrl(API_PATHS.publicWorkers.base),

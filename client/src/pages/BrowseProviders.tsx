@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import WorkerCard from "../components/WorkerCard";
 import BookingForm from "../components/BookingForm";
 import { API_URLS } from "../utils/api";
+import FindWithAI from "../components/FindWithAI";
 
 type Worker = {
   _id: string;
@@ -29,6 +30,10 @@ export default function BrowseProviders() {
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [workerToBook, setWorkerToBook] = useState<Worker | null>(null);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [aiRecommendedWorkers, setAIRecommendedWorkers] = useState<Worker[]>([]);
+  const [isAIMode, setIsAIMode] = useState(false);
+  const [aiReasoning, setAIReasoning] = useState<string>("");
 
   const fetchWorkers = useCallback(async () => {
     setLoading(true);
@@ -84,6 +89,23 @@ export default function BrowseProviders() {
     // Optionally navigate to bookings page
   }
 
+  function handleAIRecommend(recommendedWorkers: Worker[], reasoning: string) {
+    setAIRecommendedWorkers(recommendedWorkers);
+    setAIReasoning(reasoning);
+    setIsAIMode(true);
+    setFilteredWorkers(recommendedWorkers);
+    setShowAIAssistant(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleResetFilters() {
+    setIsAIMode(false);
+    setAIRecommendedWorkers([]);
+    setAIReasoning("");
+    setSelectedRole("all");
+    setFilteredWorkers(workers);
+  }
+
   function getRoleCount(role: RoleFilter): number {
     if (role === "all") return workers.length;
     return workers.filter((w) => w.role === role).length;
@@ -133,8 +155,42 @@ export default function BrowseProviders() {
 
   return (
     <>
-      <section className="w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6">
+      <section className={`w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6 relative ${showAIAssistant ? "md:mr-96" : ""} transition-all duration-300`}>
+        {/* AI Assistant Button - Fixed on Right Side */}
+        {!showAIAssistant && (
+          <button
+            onClick={() => setShowAIAssistant(true)}
+            className="fixed right-6 top-1/2 transform -translate-y-1/2 z-40 bg-gradient-to-r from-teal-600 to-blue-600 text-white px-6 py-4 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-3 font-semibold animate-pulse hover:animate-none"
+          >
+            <span className="text-2xl">🤖</span>
+            <span>Find with AI</span>
+          </button>
+        )}
+
         <div className="mx-auto max-w-7xl">
+          {/* AI Mode Banner */}
+          {isAIMode && (
+            <div className="mb-6 bg-gradient-to-r from-teal-50 to-blue-50 border-l-4 border-teal-600 rounded-lg p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1">
+                  <span className="text-2xl">✨</span>
+                  <div className="flex-1">
+                    <p className="font-semibold text-gray-900 mb-1">
+                      AI Recommendations ({aiRecommendedWorkers.length} providers found)
+                    </p>
+                    <p className="text-sm text-gray-600">{aiReasoning}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleResetFilters}
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors flex-shrink-0"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
@@ -468,6 +524,15 @@ export default function BrowseProviders() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* AI Assistant Panel */}
+      {showAIAssistant && (
+        <FindWithAI
+          workers={workers}
+          onRecommend={handleAIRecommend}
+          onClose={() => setShowAIAssistant(false)}
+        />
       )}
     </>
   );

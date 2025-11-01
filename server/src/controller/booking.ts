@@ -444,6 +444,29 @@ export async function updateBookingStatus(req: Request, res: Response) {
       });
     }
 
+    // Allow completing from both "confirmed" and "in_progress" status
+    if (status === "completed" && booking.status !== "confirmed" && booking.status !== "in_progress") {
+      return res.status(400).json({
+        success: false,
+        message: "Can only complete confirmed or in-progress bookings",
+      });
+    }
+
+    // Time-based validation: Check if service can be completed
+    if (status === "completed") {
+      const now = new Date();
+      const endDate = new Date(booking.endDate);
+      const [endHours, endMinutes] = booking.endTime.split(":").map(Number);
+      endDate.setHours(endHours, endMinutes, 0, 0);
+
+      if (now < endDate) {
+        return res.status(400).json({
+          success: false,
+          message: `Service can only be completed on or after ${endDate.toLocaleString()}`,
+        });
+      }
+    }
+
     // Update status
     booking.status = status as any;
 

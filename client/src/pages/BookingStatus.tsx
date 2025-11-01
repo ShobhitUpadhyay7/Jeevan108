@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
 
@@ -42,16 +42,9 @@ export default function BookingStatus() {
 
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    if (!token) {
-      // Redirect to login if not authenticated
-      navigate("/admin/login");
-      return;
-    }
-    fetchBookings();
-  }, [token, navigate]);
-
-  async function fetchBookings() {
+  const fetchBookings = useCallback(async () => {
+    if (!token) return;
+    
     setLoading(true);
     setError(null);
     try {
@@ -70,20 +63,24 @@ export default function BookingStatus() {
       }
 
       const data = await response.json();
-      setBookings(data.bookings || []);
+      const bookingsData = data.bookings || [];
+      setBookings(bookingsData);
     } catch (err) {
       console.error("Error fetching bookings:", err);
       setError(err instanceof Error ? err.message : "Failed to load bookings");
     } finally {
       setLoading(false);
     }
-  }
+  }, [token, selectedStatus]);
 
   useEffect(() => {
-    if (token) {
-      fetchBookings();
+    if (!token) {
+      // Redirect to login if not authenticated
+      navigate("/admin/login");
+      return;
     }
-  }, [selectedStatus]);
+    fetchBookings();
+  }, [token, navigate, fetchBookings]);
 
   async function handleCancelBooking(bookingId: string) {
     if (!confirm("Are you sure you want to cancel this booking?")) {
@@ -113,21 +110,22 @@ export default function BookingStatus() {
   function getStatusBadgeColor(status: string): string {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-100 text-yellow-800 border-yellow-300";
       case "confirmed":
-        return "bg-blue-100 text-blue-800 border-blue-200";
+        return "bg-blue-100 text-blue-800 border-blue-300";
       case "in_progress":
-        return "bg-purple-100 text-purple-800 border-purple-200";
+        return "bg-purple-100 text-purple-800 border-purple-300";
       case "completed":
-        return "bg-green-100 text-green-800 border-green-200";
+        return "bg-green-100 text-green-800 border-green-300";
       case "cancelled":
-        return "bg-red-100 text-red-800 border-red-200";
+        return "bg-red-100 text-red-800 border-red-300";
       default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
+        return "bg-gray-100 text-gray-800 border-gray-300";
     }
   }
 
   function getStatusDisplayName(status: string): string {
+    if (!status) return "Unknown";
     return status
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -180,19 +178,25 @@ export default function BookingStatus() {
               { value: "in_progress", label: "In Progress" },
               { value: "completed", label: "Completed" },
               { value: "cancelled", label: "Cancelled" },
-            ].map((filter) => (
-              <button
-                key={filter.value}
-                onClick={() => setSelectedStatus(filter.value)}
-                className={`px-6 py-2 rounded-full font-semibold transition-all duration-200 ${
-                  selectedStatus === filter.value
-                    ? "bg-teal-600 text-white shadow-lg"
-                    : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
+            ].map((filter) => {
+              const count = filter.value === "all" 
+                ? bookings.length 
+                : bookings.filter((b) => b.status === filter.value).length;
+              return (
+                <button
+                  key={filter.value}
+                  onClick={() => setSelectedStatus(filter.value)}
+                  className={`px-6 py-2 rounded-full font-semibold transition-all duration-200 ${
+                    selectedStatus === filter.value
+                      ? "bg-teal-600 text-white shadow-lg"
+                      : "bg-white text-gray-700 hover:bg-gray-100 border border-gray-200"
+                  }`}
+                >
+                  {filter.label}
+                  <span className="ml-2 text-sm opacity-75">({count})</span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Bookings List */}
@@ -263,13 +267,21 @@ export default function BookingStatus() {
                         <p className="text-sm text-gray-600">{booking.workerId.role}</p>
                       </div>
                     </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeColor(
-                        booking.status
-                      )}`}
-                    >
-                      {getStatusDisplayName(booking.status)}
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span
+                        className={`px-4 py-2 rounded-full text-xs font-bold border-2 uppercase tracking-wide shadow-sm ${getStatusBadgeColor(
+                          booking.status || "unknown"
+                        )}`}
+                        title={`Status: ${getStatusDisplayName(booking.status || "unknown")}`}
+                      >
+                        {getStatusDisplayName(booking.status || "unknown")}
+                      </span>
+                      {booking.paymentStatus && (
+                        <span className="text-xs text-gray-500">
+                          {booking.paymentStatus === "paid" ? "✓ Paid" : booking.paymentStatus === "pending" ? "⏳ Pending" : booking.paymentStatus}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-2 mb-4 text-sm text-gray-600">
@@ -396,14 +408,17 @@ export default function BookingStatus() {
                     <div className="font-semibold text-gray-900 capitalize">{selectedBooking.serviceType}</div>
                   </div>
                   <div className="p-4 border border-gray-200 rounded-lg">
-                    <div className="text-sm text-gray-600 mb-1">Status</div>
+                    <div className="text-sm text-gray-600 mb-2">Status</div>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeColor(
-                        selectedBooking.status
+                      className={`inline-block px-4 py-2 rounded-full text-sm font-bold border-2 uppercase tracking-wide ${getStatusBadgeColor(
+                        selectedBooking.status || "unknown"
                       )}`}
                     >
-                      {getStatusDisplayName(selectedBooking.status)}
+                      {getStatusDisplayName(selectedBooking.status || "unknown")}
                     </span>
+                    <div className="mt-2 text-xs text-gray-500">
+                      Payment: <span className="font-semibold capitalize">{selectedBooking.paymentStatus || "pending"}</span>
+                    </div>
                   </div>
                   <div className="p-4 border border-gray-200 rounded-lg">
                     <div className="text-sm text-gray-600 mb-1">Start Date</div>

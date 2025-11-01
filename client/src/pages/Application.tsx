@@ -1,4 +1,5 @@
 import { useState } from "react";
+import AddressAutocomplete from "../components/AddressAutocomplete";
 import { API_URLS } from "../utils/api";
 
 type Role = "Nurse" | "Caretaker" | "Compounder";
@@ -309,12 +310,11 @@ export default function Application() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Address
                 </label>
-                <input
-                  type="text"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                <AddressAutocomplete
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={setAddress}
                   placeholder="Your complete address"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
             </div>
