@@ -35,6 +35,10 @@ export const API_PATHS = {
     byRole: (role: string) => `/api/admin/users/${role}`,
     byRoleAndId: (role: string, id: string | number) => `/api/admin/users/${role}/${id}`,
   },
+  chatbot: {
+    base: "/api/chatbot",
+    chat: "/api/chatbot/chat",
+  },
 } as const;
 
 export function apiUrl(path: string): string {
@@ -73,6 +77,7 @@ export const API_URLS = {
     updateByRoleAndId: (role: string, id: string | number) => apiUrl(API_PATHS.adminUsers.byRoleAndId(role, id)),
     deleteByRoleAndId: (role: string, id: string | number) => apiUrl(API_PATHS.adminUsers.byRoleAndId(role, id)),
   },
+  chatbot: {
+    chat: () => apiUrl(API_PATHS.chatbot.chat),
+  },
 } as const;
-
-
