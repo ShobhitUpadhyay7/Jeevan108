@@ -25,6 +25,8 @@ export default function StaffList() {
     address: "",
     profilePicture: "",
   });
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string>("");
 
   const fetchStaff = useCallback(async () => {
     setLoading(true);
@@ -77,6 +79,16 @@ export default function StaffList() {
     if (details) setSelectedStaff(details);
   }
 
+  // Convert file to base64
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  }
+
   function openEditModal(staffMember: Staff) {
     setEditForm({
       username: staffMember.username || "",
@@ -85,6 +97,8 @@ export default function StaffList() {
       address: staffMember.address || "",
       profilePicture: staffMember.profilePicture || "",
     });
+    setProfilePictureFile(null);
+    setProfilePicturePreview("");
     setSelectedStaff(staffMember);
     setShowEditModal(true);
   }
@@ -95,6 +109,14 @@ export default function StaffList() {
 
     setProcessing(selectedStaff._id);
     try {
+      // Process profile picture - use new file if uploaded, otherwise use existing URL
+      let profilePictureToSend: string | undefined;
+      if (profilePictureFile) {
+        profilePictureToSend = await fileToBase64(profilePictureFile);
+      } else if (editForm.profilePicture) {
+        profilePictureToSend = editForm.profilePicture;
+      }
+
       const token = localStorage.getItem("token") || "";
       const res = await fetch(API_URLS.staff.updateById(selectedStaff._id), {
         method: "PUT",
@@ -102,7 +124,10 @@ export default function StaffList() {
           "Content-Type": "application/json",
           Authorization: token ? `Bearer ${token}` : "",
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify({
+          ...editForm,
+          profilePicture: profilePictureToSend,
+        }),
       });
 
       if (!res.ok) {
@@ -113,6 +138,8 @@ export default function StaffList() {
       await fetchStaff();
       setShowEditModal(false);
       setSelectedStaff(null);
+      setProfilePictureFile(null);
+      setProfilePicturePreview("");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to update staff");
     } finally {
@@ -338,13 +365,70 @@ export default function StaffList() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture URL</label>
-                <input
-                  type="url"
-                  value={editForm.profilePicture}
-                  onChange={(e) => setEditForm({ ...editForm, profilePicture: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Profile Picture</label>
+                {!profilePictureFile && editForm.profilePicture && (
+                  <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                    <p className="text-sm text-gray-600 mb-2">Current picture:</p>
+                    <img
+                      src={editForm.profilePicture}
+                      alt="Current profile"
+                      className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg className="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold text-teal-600 hover:text-teal-700">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP (MAX. 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          alert("File size must be less than 5MB");
+                          return;
+                        }
+                        setProfilePictureFile(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setProfilePicturePreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+                {profilePicturePreview && profilePictureFile && (
+                  <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-teal-900">New picture: {profilePictureFile.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfilePictureFile(null);
+                          setProfilePicturePreview("");
+                        }}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <img
+                      src={profilePicturePreview}
+                      alt="New profile picture preview"
+                      className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
               </div>
               <div className="flex items-center justify-end gap-3 pt-4">
                 <button

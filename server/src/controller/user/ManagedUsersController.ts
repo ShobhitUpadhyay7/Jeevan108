@@ -65,12 +65,27 @@ export async function updateUserByRole(req: Request, res: Response) {
   }
 }
 
-// Helper function to extract filename from URL
+// Helper function to extract filename from document URL
 function extractFilenameFromUrl(url: string): string | null {
   if (!url) return null;
   try {
     // URL format: http://localhost:7001/uploads/documents/filename.ext
     const parts = url.split("/uploads/documents/");
+    if (parts.length === 2) {
+      return parts[1];
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// Helper function to extract filename from image URL
+function extractImageFilenameFromUrl(url: string): string | null {
+  if (!url) return null;
+  try {
+    // URL format: http://localhost:7001/uploads/images/filename.ext
+    const parts = url.split("/uploads/images/");
     if (parts.length === 2) {
       return parts[1];
     }
@@ -114,18 +129,39 @@ async function deleteUserDocuments(user: any, role: string): Promise<void> {
   await Promise.all(deletePromises);
 }
 
+// Helper function to delete user profile picture
+async function deleteUserProfilePicture(user: any): Promise<void> {
+  if (!user.profilePicture) return;
+  
+  const profilePicUrl = user.profilePicture as string;
+  const filename = extractImageFilenameFromUrl(profilePicUrl);
+  
+  if (filename) {
+    try {
+      await deleteFile(filename, "image");
+      console.log(`Deleted profile picture: ${filename}`);
+    } catch (err) {
+      // Log error but don't fail the entire deletion
+      console.error(`Failed to delete profile picture file ${filename}:`, err);
+    }
+  }
+}
+
 export async function deleteUserByRole(req: Request, res: Response) {
   try {
     const Model = getModel(req.params.role);
     if (!Model) return res.status(400).json({ message: "Invalid role" });
     
-    // Find the user first to get document URLs before deletion
+    // Find the user first to get document URLs and profile picture before deletion
     const user = await Model.findById(req.params.id);
     if (!user) return res.status(404).json({ message: "Not found" });
     
     // Delete user's documents
     const role = req.params.role.charAt(0).toUpperCase() + req.params.role.slice(1).toLowerCase();
     await deleteUserDocuments(user, role);
+    
+    // Delete user's profile picture
+    await deleteUserProfilePicture(user);
     
     // Delete the user from database
     await Model.findByIdAndDelete(req.params.id);

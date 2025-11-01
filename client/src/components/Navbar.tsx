@@ -21,7 +21,12 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
           >
             Home
           </span>
-          <span className="font-extrabold text-[20px] cursor-pointer">Browse Providers</span>
+          <span 
+            onClick={() => navigate("/browse")}
+            className="font-extrabold text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
+          >
+            Browse Providers
+          </span>
           <span 
             onClick={() => navigate("/apply")}
             className="font-extrabold text-[20px] cursor-pointer"

@@ -42,6 +42,26 @@ export async function submitApplication(req: Request, res: Response) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     
+    // Process profile picture: save base64 image to disk and get URL
+    let processedProfilePicture: string | undefined;
+    if (profilePicture && typeof profilePicture === "string" && profilePicture.trim()) {
+      // Check if it's a base64 string (new upload) or already a URL
+      if (profilePicture.startsWith("data:image/") || profilePicture.startsWith("data:application/")) {
+        // It's a base64 string, save it to disk
+        try {
+          const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
+          processedProfilePicture = getFileUrl(filename, "image");
+          console.log("Saved profile picture:", filename);
+        } catch (picError) {
+          console.error("Error saving profile picture:", picError);
+          // Don't fail the entire submission if profile picture fails
+        }
+      } else if (profilePicture.startsWith("http://") || profilePicture.startsWith("https://")) {
+        // It's already a URL, use it as is
+        processedProfilePicture = profilePicture;
+      }
+    }
+    
     // Process documents: save base64 files to disk and get URLs
     let processedDocuments: Record<string, string> | undefined;
     if (documents && typeof documents === 'object') {
@@ -109,9 +129,12 @@ export async function submitApplication(req: Request, res: Response) {
       password: passwordHash,
       phone,
       address,
-      profilePicture,
       role,
     };
+    
+    if (processedProfilePicture) {
+      applicationData.profilePicture = processedProfilePicture;
+    }
     
     if (processedDocuments && Object.keys(processedDocuments).length > 0) {
       applicationData.documents = processedDocuments;

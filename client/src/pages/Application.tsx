@@ -15,7 +15,8 @@ export default function Application() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
-  const [profilePicture, setProfilePicture] = useState("");
+  const [profilePicture, setProfilePicture] = useState<File | null>(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState<string>("");
   const [role, setRole] = useState<Role | "">("");
   const [governmentId, setGovernmentId] = useState<File | null>(null);
   const [governmentIdPreview, setGovernmentIdPreview] = useState<string>("");
@@ -77,6 +78,12 @@ export default function Application() {
         documents.policeVerificationCertificate = await fileToBase64(policeVerificationCertificate);
       }
 
+      // Process profile picture
+      let profilePictureBase64: string | undefined;
+      if (profilePicture) {
+        profilePictureBase64 = await fileToBase64(profilePicture);
+      }
+
       const res = await fetch(API_URLS.applications.submit(), {
         method: "POST",
         headers: {
@@ -88,7 +95,7 @@ export default function Application() {
           password,
           phone,
           address: address || undefined,
-          profilePicture: profilePicture || undefined,
+          profilePicture: profilePictureBase64 || undefined,
           role,
           documents: Object.keys(documents).length > 0 ? documents : undefined,
         }),
@@ -128,7 +135,8 @@ export default function Application() {
       setConfirmPassword("");
       setPhone("");
       setAddress("");
-      setProfilePicture("");
+      setProfilePicture(null);
+      setProfilePicturePreview("");
       setRole("");
       setGovernmentId(null);
       setGovernmentIdPreview("");
@@ -240,15 +248,61 @@ export default function Application() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Profile Picture URL
+                  Profile Picture
                 </label>
-                <input
-                  type="url"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  value={profilePicture}
-                  onChange={(e) => setProfilePicture(e.target.value)}
-                  placeholder="https://..."
-                />
+                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <svg className="w-10 h-10 mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <p className="mb-2 text-sm text-gray-500">
+                      <span className="font-semibold text-teal-600 hover:text-teal-700">Click to upload</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500">PNG, JPG, GIF, WEBP (MAX. 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          setError("File size must be less than 5MB");
+                          return;
+                        }
+                        setProfilePicture(file);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setProfilePicturePreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+                {profilePicturePreview && profilePicture && (
+                  <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-medium text-teal-900">Selected: {profilePicture.name}</p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setProfilePicture(null);
+                          setProfilePicturePreview("");
+                        }}
+                        className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <img
+                      src={profilePicturePreview}
+                      alt="Profile picture preview"
+                      className="max-w-xs max-h-48 rounded-lg border border-gray-200"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="md:col-span-2">

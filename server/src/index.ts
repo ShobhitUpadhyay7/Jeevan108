@@ -8,6 +8,7 @@ import staffRoutes from "./routes/user/StaffRoutes";
 import applicationPublicRoutes from "./routes/user/ApplicationPublicRoutes";
 import applicationAdminRoutes from "./routes/user/ApplicationAdminRoutes";
 import managedUsersRoutes from "./routes/user/ManagedUsersRoutes";
+import publicWorkersRoutes from "./routes/user/PublicWorkersRoutes";
 import paymentRoutes from "./routes/payments";
 import chatbotRoutes from "./routes/chatbot";
 
@@ -32,6 +33,7 @@ app.use("/api/staff", staffRoutes);
 app.use("/api/applications", applicationPublicRoutes);
 app.use("/api/admin/applications", applicationAdminRoutes);
 app.use("/api/admin/users", managedUsersRoutes);
+app.use("/api", publicWorkersRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 

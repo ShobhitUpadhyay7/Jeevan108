@@ -40,6 +40,11 @@ export const API_PATHS = {
     createOrder: "/api/payments/create-order",
     verify: "/api/payments/verify",
   },
+  publicWorkers: {
+    base: "/api/workers",
+    byRole: (role: string) => `/api/workers/${role}`,
+    byRoleAndId: (role: string, id: string | number) => `/api/workers/${role}/${id}`,
+  },
   chatbot: {
     base: "/api/chatbot",
     chat: "/api/chatbot/chat",
@@ -88,6 +93,11 @@ export const API_URLS = {
   },
   chatbot: {
     chat: () => apiUrl(API_PATHS.chatbot.chat),
+  },
+  publicWorkers: {
+    listAll: () => apiUrl(API_PATHS.publicWorkers.base),
+    listByRole: (role: string) => apiUrl(API_PATHS.publicWorkers.byRole(role)),
+    getById: (role: string, id: string | number) => apiUrl(API_PATHS.publicWorkers.byRoleAndId(role, id)),
   },
 } as const;
 
