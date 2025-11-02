@@ -4,7 +4,7 @@ import PendingApplication from "../../model/user/PendingApplication";
 import Nurse from "../../model/user/nurse";
 import Caretaker from "../../model/user/caretaker";
 import Compounder from "../../model/user/compounder";
-import { saveBase64ToFile, getFileUrl, deleteFile } from "../../utils/upload";
+import { uploadToCloudinary, deleteFile } from "../../utils/upload";
 
 const roleToModel: Record<string, any> = {
   Nurse,
@@ -42,18 +42,17 @@ export async function submitApplication(req: Request, res: Response) {
 
     const passwordHash = await bcrypt.hash(password, 10);
     
-    // Process profile picture: save base64 image to disk and get URL
+    // Process profile picture: upload to Cloudinary
     let processedProfilePicture: string | undefined;
     if (profilePicture && typeof profilePicture === "string" && profilePicture.trim()) {
       // Check if it's a base64 string (new upload) or already a URL
       if (profilePicture.startsWith("data:image/") || profilePicture.startsWith("data:application/")) {
-        // It's a base64 string, save it to disk
+        // It's a base64 string, upload to Cloudinary
         try {
-          const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image");
-          console.log("Saved profile picture:", filename);
+          processedProfilePicture = await uploadToCloudinary(profilePicture, "image", "jeevan108/applications");
+          console.log("Saved profile picture to Cloudinary:", processedProfilePicture);
         } catch (picError) {
-          console.error("Error saving profile picture:", picError);
+          console.error("Error uploading profile picture to Cloudinary:", picError);
           // Don't fail the entire submission if profile picture fails
         }
       } else if (profilePicture.startsWith("http://") || profilePicture.startsWith("https://")) {
@@ -62,42 +61,39 @@ export async function submitApplication(req: Request, res: Response) {
       }
     }
     
-    // Process documents: save base64 files to disk and get URLs
+    // Process documents: upload base64 files to Cloudinary and get URLs
     let processedDocuments: Record<string, string> | undefined;
     if (documents && typeof documents === 'object') {
       processedDocuments = {};
       
-      // Save each document to file and get URL
+      // Upload each document to Cloudinary
       try {
         if (documents.governmentId && documents.governmentId.trim()) {
-          const filename = await saveBase64ToFile(
+          processedDocuments.governmentId = await uploadToCloudinary(
             documents.governmentId,
             "document",
-            "governmentId"
+            "jeevan108/applications"
           );
-          processedDocuments.governmentId = getFileUrl(filename, "document");
-          console.log("Saved governmentId:", filename);
+          console.log("Uploaded governmentId to Cloudinary");
         }
         
         if (documents.nursingRegistrationCertificate && documents.nursingRegistrationCertificate.trim()) {
-          const filename = await saveBase64ToFile(
+          processedDocuments.nursingRegistrationCertificate = await uploadToCloudinary(
             documents.nursingRegistrationCertificate,
             "document",
-            "nursingRegistrationCertificate"
+            "jeevan108/applications"
           );
-          processedDocuments.nursingRegistrationCertificate = getFileUrl(filename, "document");
-          console.log("Saved nursingRegistrationCertificate:", filename);
+          console.log("Uploaded nursingRegistrationCertificate to Cloudinary");
         }
         
         if (documents.trainingCertificate && documents.trainingCertificate.trim()) {
           console.log("Processing trainingCertificate, length:", documents.trainingCertificate.length);
-          const filename = await saveBase64ToFile(
+          processedDocuments.trainingCertificate = await uploadToCloudinary(
             documents.trainingCertificate,
             "document",
-            "trainingCertificate"
+            "jeevan108/applications"
           );
-          processedDocuments.trainingCertificate = getFileUrl(filename, "document");
-          console.log("Saved trainingCertificate:", filename);
+          console.log("Uploaded trainingCertificate to Cloudinary");
         } else {
           console.log("trainingCertificate not present or empty:", {
             exists: !!documents.trainingCertificate,
@@ -107,19 +103,18 @@ export async function submitApplication(req: Request, res: Response) {
         }
         
         if (documents.policeVerificationCertificate && documents.policeVerificationCertificate.trim()) {
-          const filename = await saveBase64ToFile(
+          processedDocuments.policeVerificationCertificate = await uploadToCloudinary(
             documents.policeVerificationCertificate,
             "document",
-            "policeVerificationCertificate"
+            "jeevan108/applications"
           );
-          processedDocuments.policeVerificationCertificate = getFileUrl(filename, "document");
-          console.log("Saved policeVerificationCertificate:", filename);
+          console.log("Uploaded policeVerificationCertificate to Cloudinary");
         }
         
         console.log("Processed documents:", Object.keys(processedDocuments));
       } catch (docError) {
-        console.error("Error saving documents:", docError);
-        throw new Error(`Failed to save documents: ${docError instanceof Error ? docError.message : String(docError)}`);
+        console.error("Error uploading documents to Cloudinary:", docError);
+        throw new Error(`Failed to upload documents: ${docError instanceof Error ? docError.message : String(docError)}`);
       }
     }
     
@@ -295,21 +290,6 @@ export async function approveApplication(req: Request, res: Response) {
   }
 }
 
-// Helper function to extract filename from URL
-function extractFilenameFromUrl(url: string): string | null {
-  if (!url) return null;
-  try {
-    // URL format: http://localhost:7001/uploads/documents/filename.ext
-    const parts = url.split("/uploads/documents/");
-    if (parts.length === 2) {
-      return parts[1];
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 // Helper function to delete application documents
 async function deleteApplicationDocuments(documents: any): Promise<void> {
   if (!documents) return;
@@ -322,16 +302,15 @@ async function deleteApplicationDocuments(documents: any): Promise<void> {
   if (documents.trainingCertificate) documentsToDelete.push(documents.trainingCertificate);
   if (documents.policeVerificationCertificate) documentsToDelete.push(documents.policeVerificationCertificate);
   
-  // Delete each document file
+  // Delete each document file (deleteFile now handles both local and Cloudinary URLs)
   const deletePromises = documentsToDelete.map(async (url) => {
-    const filename = extractFilenameFromUrl(url);
-    if (filename) {
+    if (url) {
       try {
-        await deleteFile(filename, "document");
-        console.log("Deleted application document:", filename);
+        await deleteFile(url, "document");
+        console.log("Deleted application document from Cloudinary");
       } catch (err) {
         // Log error but don't fail the entire deletion
-        console.error(`Failed to delete document file ${filename}:`, err);
+        console.error(`Failed to delete document:`, err);
       }
     }
   });

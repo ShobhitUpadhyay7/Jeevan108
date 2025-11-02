@@ -65,36 +65,6 @@ export async function updateUserByRole(req: Request, res: Response) {
   }
 }
 
-// Helper function to extract filename from document URL
-function extractFilenameFromUrl(url: string): string | null {
-  if (!url) return null;
-  try {
-    // URL format: http://localhost:7001/uploads/documents/filename.ext
-    const parts = url.split("/uploads/documents/");
-    if (parts.length === 2) {
-      return parts[1];
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-// Helper function to extract filename from image URL
-function extractImageFilenameFromUrl(url: string): string | null {
-  if (!url) return null;
-  try {
-    // URL format: http://localhost:7001/uploads/images/filename.ext
-    const parts = url.split("/uploads/images/");
-    if (parts.length === 2) {
-      return parts[1];
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 // Helper function to delete user documents
 async function deleteUserDocuments(user: any, role: string): Promise<void> {
   const documentsToDelete: string[] = [];
@@ -113,15 +83,15 @@ async function deleteUserDocuments(user: any, role: string): Promise<void> {
     if (user.policeVerificationCertificate) documentsToDelete.push(user.policeVerificationCertificate);
   }
   
-  // Delete each document file
+  // Delete each document file (deleteFile now handles Cloudinary URLs)
   const deletePromises = documentsToDelete.map(async (url) => {
-    const filename = extractFilenameFromUrl(url);
-    if (filename) {
+    if (url) {
       try {
-        await deleteFile(filename, "document");
+        await deleteFile(url, "document");
+        console.log(`Deleted document from Cloudinary`);
       } catch (err) {
         // Log error but don't fail the entire deletion
-        console.error(`Failed to delete document file ${filename}:`, err);
+        console.error(`Failed to delete document:`, err);
       }
     }
   });
@@ -134,16 +104,13 @@ async function deleteUserProfilePicture(user: any): Promise<void> {
   if (!user.profilePicture) return;
   
   const profilePicUrl = user.profilePicture as string;
-  const filename = extractImageFilenameFromUrl(profilePicUrl);
   
-  if (filename) {
-    try {
-      await deleteFile(filename, "image");
-      console.log(`Deleted profile picture: ${filename}`);
-    } catch (err) {
-      // Log error but don't fail the entire deletion
-      console.error(`Failed to delete profile picture file ${filename}:`, err);
-    }
+  try {
+    await deleteFile(profilePicUrl, "image");
+    console.log(`Deleted profile picture from Cloudinary`);
+  } catch (err) {
+    // Log error but don't fail the entire deletion
+    console.error(`Failed to delete profile picture:`, err);
   }
 }
 

@@ -8,7 +8,7 @@ import Compounder from "../../model/user/compounder";
 import Admin from "../../model/user/admin";
 import Staff from "../../model/user/staff";
 import Patient from "../../model/user/patient";
-import { saveBase64ToFile, getFileUrl, deleteFile } from "../../utils/upload";
+import { uploadToCloudinary, deleteFile } from "../../utils/upload";
 
 type RoleName = "User" | "Nurse" | "Caretaker" | "Compounder" | "Patient";
 
@@ -61,17 +61,16 @@ export async function register(req: Request, res: Response) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    // Process profile picture: save base64 image to disk and get URL
+    // Process profile picture: upload to Cloudinary
     let processedProfilePicture: string | undefined;
     if (profilePicture && typeof profilePicture === "string" && profilePicture.trim()) {
       // Check if it's a base64 string (new upload) or already a URL
       if (profilePicture.startsWith("data:image/") || profilePicture.startsWith("data:application/")) {
-        // It's a base64 string, save it to disk
+        // It's a base64 string, upload to Cloudinary
         try {
-          const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image");
+          processedProfilePicture = await uploadToCloudinary(profilePicture, "image", "jeevan108/users");
         } catch (picError) {
-          console.error("Error saving profile picture:", picError);
+          console.error("Error uploading profile picture to Cloudinary:", picError);
           // Don't fail the entire registration if profile picture fails
         }
       } else if (profilePicture.startsWith("http://") || profilePicture.startsWith("https://")) {
@@ -196,32 +195,29 @@ export async function updateMyProfile(req: Request, res: Response) {
     const currentUser = await Model.findById(userId);
     if (!currentUser) return res.status(404).json({ message: "Not found" });
     
-    // Process profile picture: save base64 image to disk and get URL
+    // Process profile picture: upload to Cloudinary
     let processedProfilePicture: string | undefined = (currentUser as any).profilePicture; // Keep existing by default
     if (profilePicture && typeof profilePicture === "string" && profilePicture.trim()) {
       // Check if it's a base64 string (new upload) or already a URL
       if (profilePicture.startsWith("data:image/") || profilePicture.startsWith("data:application/")) {
-        // It's a base64 string, save it to disk
+        // It's a base64 string, upload to Cloudinary
         try {
-          // Delete old profile picture if it exists
+          console.log("📤 Starting Cloudinary upload for profile picture...");
+          
+          // Delete old profile picture if it exists (only if it's a Cloudinary URL)
           if ((currentUser as any).profilePicture) {
-            const oldUrl = (currentUser as any).profilePicture as string;
-            if (oldUrl.includes("/uploads/images/")) {
-              const filename = oldUrl.split("/uploads/images/")[1];
-              if (filename) {
-                try {
-                  await deleteFile(filename, "image");
-                } catch (delError) {
-                  console.error("Error deleting old profile picture:", delError);
-                }
-              }
+            try {
+              console.log("🗑️  Deleting old profile picture...");
+              await deleteFile((currentUser as any).profilePicture as string, "image");
+            } catch (delError) {
+              console.error("⚠️  Error deleting old profile picture (non-fatal):", delError);
             }
           }
           
-          const filename = await saveBase64ToFile(profilePicture, "image", "profilePicture");
-          processedProfilePicture = getFileUrl(filename, "image");
+          processedProfilePicture = await uploadToCloudinary(profilePicture, "image", "jeevan108/users");
+          console.log("✅ Profile picture uploaded successfully:", processedProfilePicture);
         } catch (picError) {
-          console.error("Error saving profile picture:", picError);
+          console.error("❌ Error uploading profile picture to Cloudinary:", picError);
           // Don't fail the entire update if profile picture fails
         }
       } else if (profilePicture.startsWith("http://") || profilePicture.startsWith("https://")) {

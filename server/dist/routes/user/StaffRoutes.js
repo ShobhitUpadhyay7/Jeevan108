@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const auth_1 = require("../../utils/auth");
+const roles_1 = require("../../utils/roles");
+const StaffController_1 = require("../../controller/user/StaffController");
+const router = (0, express_1.Router)();
+router.use(auth_1.verifyJwt, (0, roles_1.requireRole)("Admin"));
+router.post("/", StaffController_1.createStaff);
+router.get("/", StaffController_1.listStaff);
+router.get("/:id", StaffController_1.getStaff);
+router.put("/:id", StaffController_1.updateStaff);
+router.delete("/:id", StaffController_1.deleteStaff);
+exports.default = router;

@@ -32,7 +32,7 @@ async function updateWorkerRatings(workerId: string, workerRole: string) {
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviewCount
       : 0;
 
-  await WorkerModel.findByIdAndUpdate(workerId, {
+  await (WorkerModel as any).findByIdAndUpdate(workerId, {
     averageRating: Math.round(averageRating * 10) / 10, // Round to 1 decimal
     reviewCount,
   });

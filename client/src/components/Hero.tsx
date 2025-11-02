@@ -5,7 +5,7 @@ export default function Hero() {
   return (
     <>
       <section className="w-full h-[100vh] md:h-[90vh] lg:h-[88vh] flex items-center justify-center relative">
-        <div className="absolute top-15 left-0 right-20 z-50 flex justify-center pointer-events-none">
+        <div className="absolute top-4 left-0 right-20 z-50 flex justify-center pointer-events-none">
           <div className="pointer-events-auto w-full">
             <Navbar />
           </div>
