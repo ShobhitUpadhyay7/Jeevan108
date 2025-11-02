@@ -13,6 +13,8 @@ type Worker = {
   dailyRate?: number;
   weeklyRate?: number;
   isAvailable?: boolean;
+  averageRating?: number;
+  reviewCount?: number;
 };
 
 type QuestionAnswer = {
@@ -42,50 +44,52 @@ export default function FindWithAI({ workers, onRecommend, onClose }: FindWithAI
       id: "careType",
       question: "What type of care do you need?",
       options: [
-        { value: "medical", label: "Medical Care (Injections, Monitoring)", icon: "💉" },
-        { value: "daily", label: "Daily Assistance (Feeding, Bathing)", icon: "🤲" },
-        { value: "medication", label: "Medication Management", icon: "💊" },
-        { value: "general", label: "General Healthcare Support", icon: "🏥" },
+        { value: "nurse", label: "Medical Care (Nurse)", icon: "💉", description: "Injections, vital signs, wound care, post-op care" },
+        { value: "caretaker", label: "Daily Assistance (Caretaker)", icon: "🤲", description: "Bathing, feeding, mobility, personal care" },
+        { value: "compounder", label: "Medication Support (Compounder)", icon: "💊", description: "Medication prep, first aid, basic support" },
+        { value: "any", label: "Any Type of Care", icon: "🏥", description: "Recommend best match for your needs" },
       ],
     },
     {
       id: "patientType",
       question: "Who needs care?",
       options: [
-        { value: "elderly", label: "Elderly Person", icon: "👴" },
-        { value: "post-surgery", label: "Post-Surgery Patient", icon: "🏥" },
-        { value: "chronic", label: "Chronic Illness Care", icon: "🩺" },
-        { value: "general", label: "General Health Support", icon: "👤" },
+        { value: "elderly", label: "Elderly Person", icon: "👴", description: "65+ years, age-related care" },
+        { value: "post-surgery", label: "Post-Surgery Recovery", icon: "🏥", description: "Post-operative care & monitoring" },
+        { value: "chronic", label: "Chronic Illness", icon: "🩺", description: "Long-term medical conditions" },
+        { value: "child", label: "Child/Teen", icon: "👶", description: "Pediatric care support" },
+        { value: "disability", label: "Disability Support", icon: "♿", description: "Physical or mental assistance" },
       ],
     },
     {
       id: "duration",
       question: "How long do you need the service?",
       options: [
-        { value: "few-hours", label: "Few Hours (2-4 hours)", icon: "⏰" },
-        { value: "full-day", label: "Full Day (8-12 hours)", icon: "☀️" },
-        { value: "multiple-days", label: "Multiple Days/Week", icon: "📅" },
-        { value: "long-term", label: "Long-term (Weeks/Months)", icon: "🗓️" },
+        { value: "hourly", label: "Hourly (Few Hours)", icon: "⏰", description: "2-8 hours per day" },
+        { value: "daily", label: "Daily (Full Day)", icon: "☀️", description: "8-12 hours per day" },
+        { value: "weekly", label: "Weekly (Multiple Days)", icon: "📅", description: "Several days or weeks" },
+        { value: "long-term", label: "Long-term (Months)", icon: "🗓️", description: "Weeks or months" },
       ],
     },
     {
       id: "budget",
       question: "What's your budget preference?",
       options: [
-        { value: "budget", label: "Budget-Friendly", icon: "💰" },
-        { value: "moderate", label: "Moderate", icon: "💵" },
-        { value: "premium", label: "Premium", icon: "💎" },
-        { value: "any", label: "Any Price", icon: "💳" },
+        { value: "budget", label: "Budget-Friendly", icon: "💰", description: "Lowest rates, ₹400-₹450/hr" },
+        { value: "moderate", label: "Moderate", icon: "💵", description: "Balanced quality & price, ₹450-₹500/hr" },
+        { value: "premium", label: "Premium", icon: "💎", description: "Best quality, ₹500+/hr" },
+        { value: "any", label: "Any Price", icon: "💳", description: "Quality over cost" },
       ],
     },
     {
       id: "specialRequirements",
       question: "Any special requirements? (Select all that apply)",
       options: [
-        { value: "night-shift", label: "Night Shifts", icon: "🌙" },
-        { value: "24-7", label: "24/7 Care", icon: "⏱️" },
-        { value: "experienced", label: "Highly Experienced", icon: "⭐" },
-        { value: "nearby", label: "Nearby Location", icon: "📍" },
+        { value: "experienced", label: "Highly Experienced", icon: "⭐", description: "Top rated workers" },
+        { value: "verified", label: "Verified & Certified", icon: "✅", description: "Government verified" },
+        { value: "english-speaking", label: "English Speaking", icon: "🗣️", description: "English communication" },
+        { value: "male", label: "Male Worker Preferred", icon: "👨", description: "Male caregiver" },
+        { value: "female", label: "Female Worker Preferred", icon: "👩", description: "Female caregiver" },
       ],
       multiple: true,
     },
@@ -137,6 +141,7 @@ export default function FindWithAI({ workers, onRecommend, onClose }: FindWithAI
       const data = await response.json();
 
       if (!response.ok) {
+        console.error("AI recommendation failed:", data);
         throw new Error(data.error || "Failed to get AI recommendations");
       }
 
@@ -144,7 +149,9 @@ export default function FindWithAI({ workers, onRecommend, onClose }: FindWithAI
       onClose();
     } catch (err) {
       console.error("AI recommendation error:", err);
-      setError(err instanceof Error ? err.message : "Failed to generate recommendations. Please try again.");
+      const errorMessage = err instanceof Error ? err.message : "Failed to generate recommendations. Please try again.";
+      console.error("Error details:", errorMessage);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -229,11 +236,18 @@ export default function FindWithAI({ workers, onRecommend, onClose }: FindWithAI
                         : "border-gray-200 bg-white hover:border-teal-300 hover:bg-gray-50"
                     } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{option.icon}</span>
-                      <span className="font-medium text-gray-900">{option.label}</span>
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl flex-shrink-0">{option.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 mb-1">{option.label}</div>
+                        {option.description && (
+                          <div className="text-xs text-gray-600 leading-relaxed">
+                            {option.description}
+                          </div>
+                        )}
+                      </div>
                       {isSelected && (
-                        <span className="ml-auto text-teal-600">
+                        <span className="ml-auto text-teal-600 flex-shrink-0">
                           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                             <path
                               fillRule="evenodd"

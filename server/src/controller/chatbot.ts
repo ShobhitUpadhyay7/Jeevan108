@@ -220,15 +220,142 @@ Please provide a complete, detailed, and helpful response:`
   }
 }
 
+/**
+ * Fallback recommendation function when AI is unavailable
+ * Uses server-side filtering and ranking logic
+ */
+function getFallbackRecommendations(preferences: any, workers: any[], res: Response) {
+  try {
+    let filteredWorkers = [...workers];
+    
+    // 1. Filter by role based on careType
+    if (preferences.careType && preferences.careType !== "any") {
+      const roleMap: Record<string, string> = {
+        "nurse": "Nurse",
+        "caretaker": "Caretaker",
+        "compounder": "Compounder"
+      };
+      
+      const targetRole = roleMap[preferences.careType];
+      if (targetRole) {
+        filteredWorkers = filteredWorkers.filter((w: any) => w.role === targetRole);
+        console.log(`Filtered by role ${targetRole}: ${filteredWorkers.length} workers`);
+      }
+    }
+    
+    // 2. Filter by availability
+    filteredWorkers = filteredWorkers.filter((w: any) => w.isAvailable !== false);
+    
+    // 3. Filter by budget
+    if (preferences.budget && preferences.budget !== "any") {
+      if (preferences.budget === "budget") {
+        // ₹400-₹450/hr: Caretaker (₹400) or Compounder (₹450)
+        filteredWorkers = filteredWorkers.filter((w: any) => 
+          (w.hourlyRate && w.hourlyRate <= 450) || 
+          (w.role === "Caretaker" && (!w.hourlyRate || w.hourlyRate <= 450)) ||
+          (w.role === "Compounder" && (!w.hourlyRate || w.hourlyRate <= 450))
+        );
+      } else if (preferences.budget === "moderate") {
+        // ₹450-₹500/hr: Mix of Compounder and Nurse
+        filteredWorkers = filteredWorkers.filter((w: any) => 
+          (w.hourlyRate && w.hourlyRate >= 450 && w.hourlyRate <= 500) ||
+          (!w.hourlyRate && (w.role === "Compounder" || w.role === "Nurse"))
+        );
+      } else if (preferences.budget === "premium") {
+        // ₹500+/hr: Nurse
+        filteredWorkers = filteredWorkers.filter((w: any) => 
+          (w.hourlyRate && w.hourlyRate >= 500) || 
+          (w.role === "Nurse" && (!w.hourlyRate || w.hourlyRate >= 500))
+        );
+      }
+      console.log(`Filtered by budget ${preferences.budget}: ${filteredWorkers.length} workers`);
+    }
+    
+    // 4. Filter by experience if requested
+    if (preferences.specialRequirements?.includes("experienced")) {
+      filteredWorkers = filteredWorkers.filter((w: any) => 
+        (w.averageRating || 0) >= 4.0 && (w.reviewCount || 0) >= 5
+      );
+      console.log(`Filtered by experience: ${filteredWorkers.length} workers`);
+    }
+    
+    // 5. Sort workers by priority
+    filteredWorkers.sort((a: any, b: any) => {
+      // Primary: Rating (higher is better)
+      const ratingA = a.averageRating || 0;
+      const ratingB = b.averageRating || 0;
+      if (ratingB !== ratingA) {
+        return ratingB - ratingA;
+      }
+      
+      // Secondary: Review count (more reviews = more reliable)
+      const reviewsA = a.reviewCount || 0;
+      const reviewsB = b.reviewCount || 0;
+      if (reviewsB !== reviewsA) {
+        return reviewsB - reviewsA;
+      }
+      
+      // Tertiary: Lower price (better value)
+      const rateA = a.hourlyRate || 0;
+      const rateB = b.hourlyRate || 0;
+      return rateA - rateB;
+    });
+    
+    // 6. Limit to top 10 workers
+    const recommendedWorkers = filteredWorkers.slice(0, 10);
+    
+    // 7. Build reasoning
+    let reasoning = "Recommended based on your preferences";
+    if (preferences.careType && preferences.careType !== "any") {
+      const roleMap: Record<string, string> = {
+        "nurse": "Nurses",
+        "caretaker": "Caretakers",
+        "compounder": "Compounders"
+      };
+      reasoning += ` (${roleMap[preferences.careType] || "Workers"})`;
+    }
+    if (preferences.budget && preferences.budget !== "any") {
+      reasoning += `, ${preferences.budget} pricing`;
+    }
+    if (preferences.specialRequirements?.includes("experienced")) {
+      reasoning += ", highly experienced";
+    }
+    reasoning += ".";
+    
+    console.log(`Fallback recommendation: ${recommendedWorkers.length} workers selected`);
+    
+    return res.json({
+      workers: recommendedWorkers,
+      reasoning,
+      count: recommendedWorkers.length,
+    });
+  } catch (error: any) {
+    console.error("Fallback recommendation error:", error);
+    // Even if fallback fails, return available workers
+    const availableWorkers = workers
+      .filter((w: any) => w.isAvailable !== false)
+      .slice(0, 10);
+    
+    return res.json({
+      workers: availableWorkers,
+      reasoning: "Showing available workers",
+      count: availableWorkers.length,
+    });
+  }
+}
+
 export async function recommendWorkers(req: Request, res: Response) {
   try {
+    console.log("=== AI Recommendation Request ===");
     const { preferences, workers } = req.body;
 
     if (!preferences || typeof preferences !== "object") {
+      console.error("Invalid preferences:", preferences);
       return res.status(400).json({ error: "Preferences are required" });
     }
 
     if (!workers || !Array.isArray(workers) || workers.length === 0) {
+      console.error("Invalid workers list:", workers);
       return res.status(400).json({ error: "Workers list is required" });
     }
 
@@ -238,6 +365,7 @@ export async function recommendWorkers(req: Request, res: Response) {
       console.error("BLACKBOX_API_KEY (Gemini API Key) is not configured");
       return res.status(500).json({ error: "AI service is not configured" });
     }
+    console.log("API Key found, length:", apiKey.length);
 
     // Prepare worker data summary for AI
     const workersSummary = workers.map((worker: any) => ({
@@ -249,6 +377,8 @@ export async function recommendWorkers(req: Request, res: Response) {
       weeklyRate: worker.weeklyRate,
       isAvailable: worker.isAvailable !== false,
       address: worker.address,
+      averageRating: worker.averageRating || 0,
+      reviewCount: worker.reviewCount || 0,
     }));
 
     // Build prompt for AI
@@ -263,11 +393,11 @@ Special Requirements: ${preferences.specialRequirements?.join(", ") || "None"}
     const workersText = workersSummary
       .map(
         (w) =>
-          `ID: ${w.id}, Name: ${w.name}, Role: ${w.role}, Rates: ₹${w.hourlyRate || 0}/hr, ₹${w.dailyRate || 0}/day, ₹${w.weeklyRate || 0}/week, Available: ${w.isAvailable}`
+          `ID: ${w.id}, Name: ${w.name}, Role: ${w.role}, Rates: ₹${w.hourlyRate || 0}/hr, ₹${w.dailyRate || 0}/day, ₹${w.weeklyRate || 0}/week, Rating: ${w.averageRating}/5 (${w.reviewCount} reviews), Available: ${w.isAvailable}`
       )
       .join("\n");
 
-    const prompt = `You are an intelligent healthcare worker recommendation system. Based on the patient's preferences, recommend the most suitable healthcare workers from the available list.
+    const prompt = `You are an intelligent healthcare worker recommendation system for Jeevan 108. Based on the patient's preferences, recommend the most suitable healthcare workers from the available list.
 
 PATIENT PREFERENCES:
 ${preferencesText}
@@ -275,17 +405,50 @@ ${preferencesText}
 AVAILABLE WORKERS:
 ${workersText}
 
-INSTRUCTIONS:
-1. Analyze the patient's needs based on their preferences
-2. Match workers based on:
-   - Role suitability (Nurse for medical care, Caretaker for daily assistance, Compounder for medication)
-   - Patient type requirements (elderly care, post-surgery, etc.)
-   - Budget preferences (budget-friendly, moderate, premium)
-   - Duration needs (hourly, daily, weekly rates)
-   - Special requirements (night shifts, 24/7, experience, location)
-3. Consider availability (only recommend available workers)
-4. Rank workers by best match (most suitable first)
-5. Recommend 5-10 workers maximum
+MATCHING GUIDELINES:
+1. CARE TYPE to ROLE:
+   - "nurse" → Recommend only Nurse workers
+   - "caretaker" → Recommend only Caretaker workers
+   - "compounder" → Recommend only Compounder workers
+   - "any" → Recommend best match across all roles
+
+2. PATIENT TYPE MATCHING:
+   - "elderly" → Prioritize experienced workers with good ratings
+   - "post-surgery" → Prioritize Nurse workers (they handle medical care)
+   - "chronic" → Prioritize Nurse or Compounder workers
+   - "child" → Prioritize experienced, verified workers
+   - "disability" → Prioritize Caretaker or Nurse workers
+
+3. DURATION to SERVICE TYPE:
+   - "hourly" → Workers suitable for short-term care (2-8 hours)
+   - "daily" → Workers suitable for full-day service (8-12 hours)
+   - "weekly" → Workers available for multiple days
+   - "long-term" → Workers with good ratings and availability
+
+4. BUDGET MATCHING:
+   - "budget" → ₹400-₹450/hr (Caretaker: ₹400/hr, Compounder: ₹450/hr)
+   - "moderate" → ₹450-₹500/hr (mix of Compounder and Nurse)
+   - "premium" → ₹500+/hr (Nurse: ₹500/hr)
+   - "any" → Consider all price ranges, prioritize quality
+
+5. SPECIAL REQUIREMENTS:
+   - "experienced" → Workers with averageRating >= 4.0 and reviewCount >= 5
+   - "verified" → All workers are government verified (ignore if not searchable)
+   - "english-speaking" → Assume all workers can communicate
+   - "male" or "female" → Cannot filter (data not available)
+
+RANKING PRIORITY:
+1. Role match (MOST IMPORTANT)
+2. Patient type suitability
+3. Budget alignment
+4. Experience (higher ratings and reviews first)
+5. Availability status
+
+RULES:
+- Only recommend available workers (isAvailable: true)
+- Recommend 5-10 workers maximum
+- If not enough workers match exactly, relax budget constraints
+- Always prioritize role match over other factors
 
 RESPONSE FORMAT (JSON only, no other text):
 {
@@ -296,6 +459,9 @@ RESPONSE FORMAT (JSON only, no other text):
 Return ONLY the JSON object, nothing else.`;
 
     console.log("Calling AI for worker recommendations...");
+    console.log("Preferences:", preferencesText);
+    console.log("Workers summary:", workersSummary.length, "workers");
+    console.log("First 3 workers:", workersSummary.slice(0, 3));
 
     const requestBody = {
       contents: [
@@ -379,23 +545,23 @@ Return ONLY the JSON object, nothing else.`;
 
     if (!data || !data.candidates) {
       console.error("All Gemini models failed. Last error:", lastError);
-      return res.status(500).json({
-        error: "Failed to generate recommendations. Please try again later.",
-      });
+      console.error("Last error details:", JSON.stringify(lastError, null, 2));
+      console.log("Falling back to server-side recommendation logic...");
+      
+      // Fallback: Use server-side filtering logic instead of AI
+      return getFallbackRecommendations(preferences, workers, res);
     }
 
     const candidate = data.candidates?.[0];
     if (!candidate) {
-      return res.status(500).json({
-        error: "Failed to generate recommendations.",
-      });
+      console.log("No candidate in AI response, using fallback...");
+      return getFallbackRecommendations(preferences, workers, res);
     }
 
     const aiResponse = candidate.content?.parts?.[0]?.text;
     if (!aiResponse) {
-      return res.status(500).json({
-        error: "Failed to generate recommendations.",
-      });
+      console.log("No AI response text, using fallback...");
+      return getFallbackRecommendations(preferences, workers, res);
     }
 
     // Parse JSON response from AI
@@ -418,9 +584,8 @@ Return ONLY the JSON object, nothing else.`;
           reasoning: "AI recommendation based on your preferences",
         };
       } else {
-        return res.status(500).json({
-          error: "Failed to parse AI recommendations.",
-        });
+        console.log("Failed to extract worker IDs from AI response, using fallback...");
+        return getFallbackRecommendations(preferences, workers, res);
       }
     }
 
@@ -451,6 +616,20 @@ Return ONLY the JSON object, nothing else.`;
     });
   } catch (error: any) {
     console.error("AI recommendation error:", error);
+    console.error("Error stack:", error.stack);
+    console.log("Using fallback recommendation due to error...");
+    
+    // Try to use fallback with preferences and workers from request
+    try {
+      const { preferences, workers } = req.body;
+      if (preferences && workers && Array.isArray(workers) && workers.length > 0) {
+        return getFallbackRecommendations(preferences, workers, res);
+      }
+    } catch (fallbackError: any) {
+      console.error("Fallback also failed:", fallbackError);
+    }
+    
+    // If everything fails, return error
     return res.status(500).json({
       error: "Failed to generate recommendations. Please try again later.",
       details: process.env.NODE_ENV === "development" ? error.message : undefined,
