@@ -90,14 +90,14 @@ export default function FloatingChatbot() {
       {!isFullscreen && (
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className={`fixed left-6 bottom-6 z-[60] bg-teal-500 hover:bg-teal-600 text-white rounded-full p-4 shadow-lg transition-all duration-300 hover:scale-110 ${
+          className={`fixed left-4 bottom-4 sm:left-6 sm:bottom-6 z-[60] bg-teal-500 hover:bg-teal-600 text-white rounded-full p-3 sm:p-4 shadow-lg transition-all duration-300 hover:scale-110 ${
             isOpen ? "rotate-180" : ""
           }`}
           aria-label="Open Medical Chatbot"
         >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          className="h-6 w-6"
+          className="h-5 w-5 sm:h-6 sm:w-6"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -122,34 +122,34 @@ export default function FloatingChatbot() {
         className={`fixed z-[60] bg-white shadow-2xl border border-slate-200 transition-all duration-300 ease-in-out ${
           isFullscreen
             ? "inset-0 rounded-none opacity-100"
-            : `left-6 bottom-24 w-96 max-w-[calc(100vw-3rem)] rounded-xl ${
+            : `left-2 right-2 sm:left-4 sm:right-auto sm:bottom-24 bottom-20 w-auto sm:w-96 max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-3rem)] rounded-xl ${
                 isOpen
                   ? "opacity-100 translate-x-0"
                   : "opacity-0 translate-x-[-120%] pointer-events-none"
               }`
         }`}
-        style={isFullscreen ? { height: "100vh" } : { maxHeight: "500px" }}
+        style={isFullscreen ? { height: "100vh" } : { maxHeight: "calc(100vh - 120px)", height: "auto" }}
       >
         {/* Header */}
-        <div className={`bg-teal-500 text-white p-4 flex items-center justify-between ${isFullscreen ? "" : "rounded-t-xl"}`}>
-          <div>
-            <h3 className="text-lg font-bold">Medical Assistant</h3>
-            <p className="text-xs text-teal-50">Ask medical questions</p>
+        <div className={`bg-teal-500 text-white p-3 sm:p-4 flex items-center justify-between ${isFullscreen ? "" : "rounded-t-xl"}`}>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base sm:text-lg font-bold truncate">Medical Assistant</h3>
+            <p className="text-xs text-teal-50 truncate">Ask medical questions</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             {/* Fullscreen Toggle Button */}
             <button
               onClick={() => {
                 setIsFullscreen(!isFullscreen);
                 if (!isOpen) setIsOpen(true);
               }}
-              className="text-white hover:text-teal-200 transition-colors"
+              className="text-white hover:text-teal-200 transition-colors p-1"
               aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
             >
               {isFullscreen ? (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -159,7 +159,7 @@ export default function FloatingChatbot() {
               ) : (
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className="h-4 w-4 sm:h-5 sm:w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -174,12 +174,12 @@ export default function FloatingChatbot() {
                 setIsOpen(false);
                 setIsFullscreen(false);
               }}
-              className="text-white hover:text-teal-200 transition-colors"
+              className="text-white hover:text-teal-200 transition-colors p-1"
               aria-label="Close chat"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-4 w-4 sm:h-5 sm:w-5"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -192,8 +192,8 @@ export default function FloatingChatbot() {
 
         {/* Messages Area */}
         <div
-          className="overflow-y-auto p-4 space-y-3 bg-slate-50"
-          style={isFullscreen ? { height: "calc(100vh - 180px)" } : { maxHeight: "350px", minHeight: "350px" }}
+          className="overflow-y-auto p-3 sm:p-4 space-y-2 sm:space-y-3 bg-slate-50"
+          style={isFullscreen ? { height: "calc(100vh - 160px)" } : { maxHeight: "300px", minHeight: "250px" }}
         >
           {messages.map((msg, idx) => (
             <div
@@ -201,7 +201,7 @@ export default function FloatingChatbot() {
               className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${
+                className={`max-w-[85%] sm:max-w-[75%] rounded-lg px-2.5 sm:px-3 py-2 text-xs sm:text-sm ${
                   msg.role === "user"
                     ? "bg-teal-500 text-white"
                     : "bg-white text-slate-800 border border-slate-200"
@@ -234,32 +234,32 @@ export default function FloatingChatbot() {
         {/* Input Area */}
         <form
           onSubmit={handleSend}
-          className={`p-3 border-t border-slate-200 bg-white ${isFullscreen ? "" : "rounded-b-xl"}`}
+          className={`p-2.5 sm:p-3 border-t border-slate-200 bg-white ${isFullscreen ? "" : "rounded-b-xl"}`}
         >
           {error && (
-            <div className="mb-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1">
+            <div className="mb-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-2 py-1 break-words">
               {error}
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex gap-1.5 sm:gap-2">
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask any medical question in any way..."
-              className="flex-1 text-sm rounded-lg border border-slate-300 px-3 py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
+              placeholder="Ask any medical question..."
+              className="flex-1 text-xs sm:text-sm rounded-lg border border-slate-300 px-2 sm:px-3 py-1.5 sm:py-2 outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400"
               disabled={loading}
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm"
+              className="bg-teal-500 hover:bg-teal-600 disabled:bg-teal-300 text-white font-semibold px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors text-xs sm:text-sm whitespace-nowrap"
             >
               {loading ? "..." : "Send"}
             </button>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-1 hidden sm:block">
             Ask naturally - I understand any format, even with typos!
           </p>
         </form>

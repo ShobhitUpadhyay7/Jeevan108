@@ -54,16 +54,32 @@ export default function BrowseProviders() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(API_URLS.publicWorkers.listAll());
+      const res = await fetch(API_URLS.publicWorkers.listAll(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        mode: "cors",
+        credentials: "omit", // Don't send cookies to avoid CORS issues
+      });
       if (!res.ok) {
-        throw new Error("Failed to fetch workers");
+        throw new Error(`Failed to fetch workers: ${res.status} ${res.statusText}`);
       }
       const data = (await res.json()) as Worker[];
       setWorkers(data);
       setFilteredWorkers(data);
     } catch (err) {
       console.error("Error fetching workers:", err);
-      setError(err instanceof Error ? err.message : "Failed to load providers");
+      const errorMessage = err instanceof Error ? err.message : "Failed to load providers";
+      // Check if it's a blocked request (common in Brave browser)
+      if (errorMessage.includes("Failed to fetch") || errorMessage.includes("network")) {
+        setError(
+          "Failed to connect to server. If you're using Brave browser, please disable Brave Shields for this site or allow requests to localhost."
+        );
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

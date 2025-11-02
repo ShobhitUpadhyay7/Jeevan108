@@ -2,7 +2,7 @@
 // Centralized API definitions
 
 export const development = "http://localhost:7001" as const;
-export const deployment = "https://api.example.com";
+export const deployment = "https://jeevan-dphd.onrender.com";
 
 // Simple environment switch: set to "deployment" to use deployment base URL
 export const ENVIRONMENT = "development" as string; // or "deployment"
