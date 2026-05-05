@@ -23,6 +23,15 @@ type WorkerProfile = {
   updatedAt?: string;
 };
 
+function normalizeWorkerRole(role?: string): "Nurse" | "Caretaker" | "Compounder" | undefined {
+  if (!role) return undefined;
+  const normalized = role.trim().toLowerCase();
+  if (normalized === "nurse") return "Nurse";
+  if (normalized === "caretaker") return "Caretaker";
+  if (normalized === "compounder") return "Compounder";
+  return undefined;
+}
+
 export default function WorkerDashboard() {
   const navigate = useNavigate();
   const [workerProfile, setWorkerProfile] = useState<WorkerProfile | null>(null);
@@ -77,12 +86,12 @@ export default function WorkerDashboard() {
       })
       .then((profile: WorkerProfile) => {
         // Check if user is a worker
-        const workerRoles = ["Nurse", "Caretaker", "Compounder"];
-        if (!profile.role || !workerRoles.includes(profile.role)) {
+        const normalizedRole = normalizeWorkerRole(profile.role);
+        if (!normalizedRole) {
           navigate("/");
           return;
         }
-        setWorkerProfile(profile);
+        setWorkerProfile({ ...profile, role: normalizedRole });
       })
       .catch((err) => {
         console.error("Error loading dashboard:", err);

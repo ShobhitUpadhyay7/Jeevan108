@@ -11,6 +11,23 @@ type UserInfo = {
   email?: string;
 };
 
+function getWorkerPanelPath(role?: string): string {
+  switch (role) {
+    case "Nurse":
+      return "/nurse/panel";
+    case "Caretaker":
+      return "/caretaker/panel";
+    case "Compounder":
+      return "/compounder/panel";
+    default:
+      return "/worker/dashboard";
+  }
+}
+
+function isWorkerRole(role?: string): boolean {
+  return role === "Nurse" || role === "Caretaker" || role === "Compounder";
+}
+
 export default function Navbar({ className, ...rest }: NavbarProps) {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -121,6 +138,14 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
           >
             Check Status
           </span>
+          {isLoggedIn && isWorkerRole(userInfo?.role) && (
+            <span
+              onClick={() => navigate(getWorkerPanelPath(userInfo?.role))}
+              className="font-extrabold text-base xl:text-[20px] cursor-pointer hover:text-teal-400 transition-colors"
+            >
+              My Panel
+            </span>
+          )}
           {!isLoggedIn && (
             <span 
               onClick={() => navigate("/signup")}
@@ -252,6 +277,17 @@ export default function Navbar({ className, ...rest }: NavbarProps) {
             >
               Check Status
             </span>
+            {isLoggedIn && isWorkerRole(userInfo?.role) && (
+              <span
+                onClick={() => {
+                  navigate(getWorkerPanelPath(userInfo?.role));
+                  setIsMobileMenuOpen(false);
+                }}
+                className="font-extrabold text-base sm:text-lg cursor-pointer hover:text-teal-400 transition-colors text-center py-2"
+              >
+                My Panel
+              </span>
+            )}
             {!isLoggedIn && (
               <span 
                 onClick={() => {

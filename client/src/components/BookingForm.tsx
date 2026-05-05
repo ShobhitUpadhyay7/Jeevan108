@@ -17,6 +17,15 @@ type BookingFormProps = {
   onCancel?: () => void;
 };
 
+function normalizeServiceType(role?: string): "Nurse" | "Caretaker" | "Compounder" | undefined {
+  if (!role) return undefined;
+  const normalized = role.trim().toLowerCase();
+  if (normalized === "nurse") return "Nurse";
+  if (normalized === "caretaker") return "Caretaker";
+  if (normalized === "compounder") return "Compounder";
+  return undefined;
+}
+
 export default function BookingForm({ worker, onSuccess, onCancel }: BookingFormProps) {
   const [formData, setFormData] = useState({
     serviceType: "hourly" as "hourly" | "daily" | "weekly",
@@ -97,6 +106,15 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
     }
 
     try {
+      if (totalAmount <= 0) {
+        throw new Error("Invalid booking amount. Please check provider pricing.");
+      }
+
+      const normalizedWorkerRole = normalizeServiceType(worker.role);
+      if (!normalizedWorkerRole) {
+        throw new Error("Invalid worker role for payment.");
+      }
+
       // Step 1: Create booking first (with pending payment status)
       const bookingResponse = await fetch(API_URLS.bookings.create(), {
         method: "POST",
@@ -129,15 +147,30 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
         body: JSON.stringify({
           amount: totalAmount,
           paidTo: worker._id,
-          serviceType: worker.role,
+          serviceType: normalizedWorkerRole,
           serviceReference: bookingId,
-          description: `Booking for ${worker.role} - ${formData.serviceType} service`,
+          description: `Booking for ${normalizedWorkerRole} - ${formData.serviceType} service`,
         }),
       });
 
       const orderData = await orderResponse.json();
 
       if (!orderResponse.ok) {
+        // Cleanup booking if payment order creation fails
+        try {
+          await fetch(API_URLS.bookings.cancel(bookingId), {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              reason: "Auto-cancelled because payment order creation failed",
+            }),
+          });
+        } catch (cleanupError) {
+          console.error("Failed to auto-cancel booking after payment error:", cleanupError);
+        }
         throw new Error(orderData.message || "Failed to create payment order");
       }
 

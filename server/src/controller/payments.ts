@@ -4,10 +4,19 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import Payment from "../model/payments";
 
+function normalizeServiceType(role?: string): "Nurse" | "Caretaker" | "Compounder" | undefined {
+  if (!role) return undefined;
+  const normalized = role.trim().toLowerCase();
+  if (normalized === "nurse") return "Nurse";
+  if (normalized === "caretaker") return "Caretaker";
+  if (normalized === "compounder") return "Compounder";
+  return undefined;
+}
+
 // Lazy initialization of Razorpay to ensure env vars are loaded
 function getRazorpayInstance(): Razorpay {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+  const keyId = process.env.RAZORPAY_KEY_ID?.trim().replace(/^['"]|['"]$/g, "");
+  const keySecret = process.env.RAZORPAY_KEY_SECRET?.trim().replace(/^['"]|['"]$/g, "");
 
   if (!keyId || !keySecret) {
     throw new Error("Razorpay credentials not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your .env file");
@@ -32,6 +41,28 @@ export const createOrder = async (req: Request, res: Response) => {
       });
     }
 
+    if (Number(amount) <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be greater than 0",
+      });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(String(paidTo))) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid professional ID",
+      });
+    }
+
+    const normalizedServiceType = normalizeServiceType(serviceType);
+    if (serviceType && !normalizedServiceType) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid service type. Must be Nurse, Caretaker, or Compounder",
+      });
+    }
+
     // Calculate professional amount if commission is specified
     const professionalAmount = platformCommission 
       ? amount - (amount * platformCommission / 100)
@@ -44,7 +75,7 @@ export const createOrder = async (req: Request, res: Response) => {
       notes: {
         paidBy: userId,
         paidTo: paidTo,
-        serviceType: serviceType || "",
+        serviceType: normalizedServiceType || "",
       },
     };
 
@@ -58,7 +89,7 @@ export const createOrder = async (req: Request, res: Response) => {
       status: "created",
       paidBy: userId,
       paidTo,
-      serviceType,
+      serviceType: normalizedServiceType,
       serviceReference,
       description,
       platformCommission,
@@ -73,7 +104,15 @@ export const createOrder = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Error creating Razorpay order" });
+    const razorpayErrorDescription =
+      (error as { error?: { description?: string } })?.error?.description;
+    const message =
+      razorpayErrorDescription ||
+      (error instanceof Error ? error.message : "Error creating Razorpay order");
+    res.status(500).json({
+      success: false,
+      message,
+    });
   }
 };
 

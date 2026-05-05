@@ -196,7 +196,6 @@ bookingSchema.index({ patientId: 1, createdAt: -1 }); // Get bookings by patient
 bookingSchema.index({ workerId: 1, createdAt: -1 }); // Get bookings by worker
 bookingSchema.index({ workerId: 1, startDate: 1, status: 1 }); // Check availability
 bookingSchema.index({ status: 1, createdAt: -1 }); // Get bookings by status
-bookingSchema.index({ paymentStatus: 1 }); // Get bookings by payment status
 
 // Compound index for availability checking
 bookingSchema.index({ workerId: 1, startDate: 1, endDate: 1, status: 1 });

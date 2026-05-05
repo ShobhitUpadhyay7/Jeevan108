@@ -21,6 +21,9 @@ function App() {
         <Route path="/admin/users" element={<AdminDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/worker/dashboard" element={<WorkerDashboard />} />
+        <Route path="/nurse/panel" element={<WorkerDashboard />} />
+        <Route path="/caretaker/panel" element={<WorkerDashboard />} />
+        <Route path="/compounder/panel" element={<WorkerDashboard />} />
         <Route path="/browse" element={<BrowseProviders />} />
         <Route path="/apply" element={<Application />} />
         <Route path="/bookings" element={<BookingStatus />} />

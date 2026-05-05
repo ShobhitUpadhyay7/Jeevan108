@@ -17,6 +17,27 @@ type UserInfo = {
 
 type AllowedRole = "Admin" | "Staff" | "Nurse" | "Caretaker" | "Compounder" | "Patient";
 
+function normalizeRole(role?: string): AllowedRole | undefined {
+  if (!role) return undefined;
+  const normalized = role.trim().toLowerCase();
+  switch (normalized) {
+    case "admin":
+      return "Admin";
+    case "staff":
+      return "Staff";
+    case "nurse":
+      return "Nurse";
+    case "caretaker":
+      return "Caretaker";
+    case "compounder":
+      return "Compounder";
+    case "patient":
+      return "Patient";
+    default:
+      return undefined;
+  }
+}
+
 export default function AdminLogin() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -32,9 +53,11 @@ export default function AdminLogin() {
       case "Staff":
         return "/admin/dashboard"; // Staff can also access admin dashboard (adjust if needed)
       case "Nurse":
+        return "/nurse/panel";
       case "Caretaker":
+        return "/caretaker/panel";
       case "Compounder":
-        return "/worker/dashboard"; // Workers go to worker dashboard
+        return "/compounder/panel";
       case "Patient":
         return "/bookings"; // Patients go to bookings page
       default:
@@ -74,7 +97,7 @@ export default function AdminLogin() {
       }
 
       const userInfo: UserInfo = await userRes.json();
-      const role = userInfo.role as AllowedRole | undefined;
+      const role = normalizeRole(userInfo.role);
 
       // Check if user has an allowed role
       const allowedRoles: AllowedRole[] = ["Admin", "Staff", "Nurse", "Caretaker", "Compounder", "Patient"];
