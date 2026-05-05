@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
+import BackToHomeButton from "../components/BackToHomeButton";
 
 type LoginResponse = {
   token?: string;
@@ -95,8 +96,10 @@ export default function AdminLogin() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-xl">
+    <>
+      <BackToHomeButton />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white border border-slate-200 rounded-xl p-6 shadow-xl">
         <div className="mb-4">
           <h1 className="text-2xl font-bold leading-none">Login</h1>
           <p className="text-xs text-slate-500 mt-1">Sign in with your account</p>
@@ -154,8 +157,9 @@ export default function AdminLogin() {
             Sign up as Patient
           </a>
         </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </>
   );
 }
 

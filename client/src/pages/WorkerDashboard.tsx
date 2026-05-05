@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
 import AddressAutocomplete from "../components/AddressAutocomplete";
+import BackToHomeButton from "../components/BackToHomeButton";
 
 type WorkerProfile = {
   _id: string;
@@ -289,30 +290,38 @@ export default function WorkerDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-600">Loading dashboard...</p>
-      </div>
+      <>
+        <BackToHomeButton />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{error}</p>
-          <button
-            onClick={() => navigate("/admin/login")}
-            className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-          >
-            Go to Login
-          </button>
+      <>
+        <BackToHomeButton />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => navigate("/admin/login")}
+              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+            >
+              Go to Login
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <>
+      <BackToHomeButton />
+      <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
       <aside className="w-64 min-h-screen bg-white border-r border-gray-200 shadow-sm fixed left-0 top-0 pt-16">
         <div className="p-4">
@@ -951,6 +960,7 @@ export default function WorkerDashboard() {
           </div>
         </section>
       </main>
-    </div>
+      </div>
+    </>
   );
 }

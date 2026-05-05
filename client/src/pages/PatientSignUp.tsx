@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { API_URLS } from "../utils/api";
 import AddressAutocomplete from "../components/AddressAutocomplete";
+import BackToHomeButton from "../components/BackToHomeButton";
 
 export default function PatientSignUp() {
   const navigate = useNavigate();
@@ -106,8 +107,10 @@ export default function PatientSignUp() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-12">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-6 shadow-xl">
+    <>
+      <BackToHomeButton />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-12">
+        <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl p-6 shadow-xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold leading-none">Create Patient Account</h1>
           <p className="text-xs text-slate-500 mt-1">Sign up to book healthcare services</p>
@@ -255,8 +258,9 @@ export default function PatientSignUp() {
             </Link>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

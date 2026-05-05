@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { API_URLS } from "../utils/api";
 import ReviewModal from "../components/ReviewModal";
+import BackToHomeButton from "../components/BackToHomeButton";
 
 type Booking = {
   _id: string;
@@ -188,17 +189,21 @@ export default function BookingStatus() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
-          <p className="text-gray-600">Loading bookings...</p>
+      <>
+        <BackToHomeButton />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
+            <p className="text-gray-600">Loading bookings...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
+      <BackToHomeButton />
       <section className="w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6">
         <div className="mx-auto max-w-7xl">
           {/* Header */}

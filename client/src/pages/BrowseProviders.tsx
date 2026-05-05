@@ -4,6 +4,7 @@ import BookingForm from "../components/BookingForm";
 import { API_URLS } from "../utils/api";
 import FindWithAI from "../components/FindWithAI";
 import StarRating from "../components/StarRating";
+import BackToHomeButton from "../components/BackToHomeButton";
 
 type Worker = {
   _id: string;
@@ -159,48 +160,55 @@ export default function BrowseProviders() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
-          <p className="text-gray-600">Loading providers...</p>
+      <>
+        <BackToHomeButton />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600 mb-4"></div>
+            <p className="text-gray-600">Loading providers...</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-        <div className="text-center max-w-md">
-          <div className="inline-block p-4 bg-red-100 rounded-full mb-4">
-            <svg
-              className="w-12 h-12 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+      <>
+        <BackToHomeButton />
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+          <div className="text-center max-w-md">
+            <div className="inline-block p-4 bg-red-100 rounded-full mb-4">
+              <svg
+                className="w-12 h-12 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
+              </svg>
+            </div>
+            <p className="text-red-600 mb-4 font-medium">{error}</p>
+            <button
+              onClick={fetchWorkers}
+              className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+              Retry
+            </button>
           </div>
-          <p className="text-red-600 mb-4 font-medium">{error}</p>
-          <button
-            onClick={fetchWorkers}
-            className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 font-medium"
-          >
-            Retry
-          </button>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
+      <BackToHomeButton />
       <section className={`w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6 relative ${showAIAssistant ? "md:mr-96" : ""} transition-all duration-300`}>
         {/* AI Assistant Button - Fixed on Right Side */}
         {!showAIAssistant && (

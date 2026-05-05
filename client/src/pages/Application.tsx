@@ -1,6 +1,7 @@
 import { useState } from "react";
 import AddressAutocomplete from "../components/AddressAutocomplete";
 import { API_URLS } from "../utils/api";
+import BackToHomeButton from "../components/BackToHomeButton";
 
 type Role = "Nurse" | "Caretaker" | "Compounder";
 
@@ -160,8 +161,10 @@ export default function Application() {
   const isCompounder = role === "Compounder";
 
   return (
-    <section className="w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6">
-      <div className="mx-auto max-w-4xl">
+    <>
+      <BackToHomeButton />
+      <section className="w-full min-h-screen bg-gray-50 py-12 px-4 md:px-6">
+        <div className="mx-auto max-w-4xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
             Join <span className="text-teal-600">Jeevan 108</span>
@@ -655,7 +658,8 @@ export default function Application() {
             <li>If approved, you'll be able to log in and start providing services</li>
           </ul>
         </div>
-      </div>
-    </section>
+        </div>
+      </section>
+    </>
   );
 }

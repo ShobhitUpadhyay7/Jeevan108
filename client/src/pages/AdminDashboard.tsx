@@ -6,6 +6,7 @@ import AdminSidebar from "../components/admin/AdminSidebar";
 import ApplicationList from "../components/admin/ApplicationList";
 import UserList from "../components/admin/UserList.tsx";
 import StaffList from "../components/admin/StaffList";
+import BackToHomeButton from "../components/BackToHomeButton";
 
 export default function AdminDashboard() {
   const [name, setName] = useState<string>("");
@@ -55,27 +56,30 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <AdminSidebar />
-      <main className="flex-1 ml-64">
-        <section className="w-full min-h-screen py-8">
-          <div className="mx-auto max-w-6xl px-4 md:px-6">
-            <div className="mb-8">
-              <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-                Admin Panel
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Welcome{ name ? `, ${name}` : "" }. Manage your platform here.
-              </p>
-            </div>
+    <>
+      <BackToHomeButton />
+      <div className="flex min-h-screen bg-gray-50">
+        <AdminSidebar />
+        <main className="flex-1 ml-64">
+          <section className="w-full min-h-screen py-8">
+            <div className="mx-auto max-w-6xl px-4 md:px-6">
+              <div className="mb-8">
+                <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">
+                  Admin Panel
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  Welcome{ name ? `, ${name}` : "" }. Manage your platform here.
+                </p>
+              </div>
 
-            <div className="grid grid-cols-1 gap-6">
-              {renderContent()}
+              <div className="grid grid-cols-1 gap-6">
+                {renderContent()}
+              </div>
             </div>
-          </div>
-        </section>
-      </main>
-    </div>
+          </section>
+        </main>
+      </div>
+    </>
   );
 }
 

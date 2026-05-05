@@ -70,7 +70,7 @@ app.use("/uploads", (req, res, next) => {
 // Connect to DB
 connectDB();
 
-// ✅ API routes
+// API routes
 app.use("/api/auth", userAuthRoutes);
 app.use("/api/staff", staffRoutes);
 app.use("/api/applications", applicationPublicRoutes);
@@ -82,7 +82,7 @@ app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/bookings", bookingRoutes);
 
-// ✅ Serve frontend (React build)
+// Serve frontend (React build)
 const __dirname1 = path.resolve();
 
 // Serve static files from client/dist (Vite build)
@@ -99,7 +99,7 @@ app.use((req, res, next) => {
   res.sendFile(path.join(__dirname1, "../client/dist/index.html"));
 });
 
-// ✅ Start server
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
