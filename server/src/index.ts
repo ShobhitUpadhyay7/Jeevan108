@@ -14,7 +14,7 @@ import chatbotRoutes from "./routes/chatbot";
 import reviewRoutes from "./routes/reviews";
 import bookingRoutes from "./routes/booking";
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 const app = express();
 
 app.use(cors());

@@ -18,7 +18,7 @@ const payments_1 = __importDefault(require("./routes/payments"));
 const chatbot_1 = __importDefault(require("./routes/chatbot"));
 const reviews_1 = __importDefault(require("./routes/reviews"));
 const booking_1 = __importDefault(require("./routes/booking"));
-dotenv_1.default.config();
+dotenv_1.default.config({ path: path_1.default.resolve(__dirname, "../.env") });
 const app = (0, express_1.default)();
 app.use((0, cors_1.default)());
 app.use(express_1.default.json({ limit: "50mb" })); // Increase limit to handle base64 file uploads
@@ -66,7 +66,7 @@ app.use("/uploads", (req, res, next) => {
 }));
 // Connect to DB
 (0, database_1.default)();
-// ✅ API routes
+// API routes
 app.use("/api/auth", BaseRoutes_1.default);
 app.use("/api/staff", StaffRoutes_1.default);
 app.use("/api/applications", ApplicationPublicRoutes_1.default);
@@ -77,7 +77,7 @@ app.use("/api/payments", payments_1.default);
 app.use("/api/chatbot", chatbot_1.default);
 app.use("/api/reviews", reviews_1.default);
 app.use("/api/bookings", booking_1.default);
-// ✅ Serve frontend (React build)
+// Serve frontend (React build)
 const __dirname1 = path_1.default.resolve();
 // Serve static files from client/dist (Vite build)
 app.use(express_1.default.static(path_1.default.join(__dirname1, "../client/dist")));
@@ -91,7 +91,7 @@ app.use((req, res, next) => {
     // Serve index.html for all other routes (React Router)
     res.sendFile(path_1.default.join(__dirname1, "../client/dist/index.html"));
 });
-// ✅ Start server
+// Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);

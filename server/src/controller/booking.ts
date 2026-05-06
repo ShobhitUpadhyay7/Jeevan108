@@ -5,6 +5,21 @@ import Caretaker from "../model/user/caretaker";
 import Compounder from "../model/user/compounder";
 import User from "../model/user/BaseModel";
 
+function parseDateOnly(dateString: string): Date {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function isTimeAfter(startTime: string, endTime: string): boolean {
+  const [startHour, startMinute] = startTime.split(":").map(Number);
+  const [endHour, endMinute] = endTime.split(":").map(Number);
+
+  const startTotalMinutes = startHour * 60 + startMinute;
+  const endTotalMinutes = endHour * 60 + endMinute;
+
+  return endTotalMinutes > startTotalMinutes;
+}
+
 // Helper to get worker model by role
 function getWorkerModel(role: string): typeof Nurse | typeof Caretaker | typeof Compounder | null {
   switch (role) {
@@ -182,15 +197,29 @@ export async function createBooking(req: Request, res: Response) {
       });
     }
 
-    // Parse dates
-    const startDateTime = new Date(startDate);
-    const endDateTime = new Date(endDate);
+    // Parse dates using local midnight so date-only inputs behave consistently
+    const startDateTime = parseDateOnly(startDate);
+    const endDateTime = parseDateOnly(endDate);
 
-    // Validate dates
-    if (startDateTime >= endDateTime) {
+    if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
       return res.status(400).json({
         success: false,
-        message: "End date must be after start date",
+        message: "Invalid start or end date",
+      });
+    }
+
+    // Validate dates
+    if (endDateTime < startDateTime) {
+      return res.status(400).json({
+        success: false,
+        message: "End date must be on or after start date",
+      });
+    }
+
+    if (startDateTime.getTime() === endDateTime.getTime() && !isTimeAfter(startTime, endTime)) {
+      return res.status(400).json({
+        success: false,
+        message: "End time must be after start time for a same-day booking",
       });
     }
 

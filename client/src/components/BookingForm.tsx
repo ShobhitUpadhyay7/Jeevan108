@@ -13,7 +13,7 @@ type Worker = {
 
 type BookingFormProps = {
   worker: Worker;
-  onSuccess?: () => void;
+  onSuccess?: (message?: string) => void;
   onCancel?: () => void;
 };
 
@@ -88,10 +88,18 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
 
   // Set end date same as start date by default
   useEffect(() => {
-    if (formData.startDate && !formData.endDate) {
-      setFormData((prev) => ({ ...prev, endDate: formData.startDate }));
+    if (!formData.startDate) {
+      return;
     }
-  }, [formData.startDate, formData.endDate]);
+
+    setFormData((prev) => {
+      if (!prev.endDate || prev.endDate < prev.startDate) {
+        return { ...prev, endDate: prev.startDate };
+      }
+
+      return prev;
+    });
+  }, [formData.startDate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -156,7 +164,26 @@ export default function BookingForm({ worker, onSuccess, onCancel }: BookingForm
       const orderData = await orderResponse.json();
 
       if (!orderResponse.ok) {
-        // Cleanup booking if payment order creation fails
+        const paymentSetupRequired =
+          orderResponse.status === 503 ||
+          orderData.paymentSetupRequired ||
+          /authentication failed/i.test(orderData.message || "");
+
+        if (paymentSetupRequired) {
+          const fallbackMessage =
+            orderData.message ||
+            "Your booking was saved, but payment could not be started right now. Please try again later.";
+
+          setLoading(false);
+          if (onSuccess) {
+            onSuccess(fallbackMessage);
+          } else {
+            setError(fallbackMessage);
+          }
+          return;
+        }
+
+        // Cleanup booking if payment order creation fails for a non-authentication reason
         try {
           await fetch(API_URLS.bookings.cancel(bookingId), {
             method: "DELETE",

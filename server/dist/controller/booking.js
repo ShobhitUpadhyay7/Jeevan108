@@ -24,6 +24,17 @@ const nurse_1 = __importDefault(require("../model/user/nurse"));
 const caretaker_1 = __importDefault(require("../model/user/caretaker"));
 const compounder_1 = __importDefault(require("../model/user/compounder"));
 const BaseModel_1 = __importDefault(require("../model/user/BaseModel"));
+function parseDateOnly(dateString) {
+    const [year, month, day] = dateString.split("-").map(Number);
+    return new Date(year, month - 1, day);
+}
+function isTimeAfter(startTime, endTime) {
+    const [startHour, startMinute] = startTime.split(":").map(Number);
+    const [endHour, endMinute] = endTime.split(":").map(Number);
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    return endTotalMinutes > startTotalMinutes;
+}
 // Helper to get worker model by role
 function getWorkerModel(role) {
     switch (role) {
@@ -159,14 +170,26 @@ function createBooking(req, res) {
                     message: "Worker is currently not available for booking",
                 });
             }
-            // Parse dates
-            const startDateTime = new Date(startDate);
-            const endDateTime = new Date(endDate);
-            // Validate dates
-            if (startDateTime >= endDateTime) {
+            // Parse dates using local midnight so date-only inputs behave consistently
+            const startDateTime = parseDateOnly(startDate);
+            const endDateTime = parseDateOnly(endDate);
+            if (Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
                 return res.status(400).json({
                     success: false,
-                    message: "End date must be after start date",
+                    message: "Invalid start or end date",
+                });
+            }
+            // Validate dates
+            if (endDateTime < startDateTime) {
+                return res.status(400).json({
+                    success: false,
+                    message: "End date must be on or after start date",
+                });
+            }
+            if (startDateTime.getTime() === endDateTime.getTime() && !isTimeAfter(startTime, endTime)) {
+                return res.status(400).json({
+                    success: false,
+                    message: "End time must be after start time for a same-day booking",
                 });
             }
             if (startDateTime < new Date()) {

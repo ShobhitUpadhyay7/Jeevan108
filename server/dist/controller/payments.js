@@ -48,14 +48,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.verifyPayment = exports.createOrder = void 0;
 const razorpay_1 = __importDefault(require("razorpay"));
 const crypto_1 = __importDefault(require("crypto"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const payments_1 = __importDefault(require("../model/payments"));
+function normalizeServiceType(role) {
+    if (!role)
+        return undefined;
+    const normalized = role.trim().toLowerCase();
+    if (normalized === "nurse")
+        return "Nurse";
+    if (normalized === "caretaker")
+        return "Caretaker";
+    if (normalized === "compounder")
+        return "Compounder";
+    return undefined;
+}
 // Lazy initialization of Razorpay to ensure env vars are loaded
 function getRazorpayInstance() {
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    var _a, _b;
+    const keyId = (_a = process.env.RAZORPAY_KEY_ID) === null || _a === void 0 ? void 0 : _a.trim().replace(/^['"]|['"]$/g, "");
+    const keySecret = (_b = process.env.RAZORPAY_KEY_SECRET) === null || _b === void 0 ? void 0 : _b.trim().replace(/^['"]|['"]$/g, "");
     if (!keyId || !keySecret) {
         throw new Error("Razorpay credentials not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your .env file");
     }
+    console.log("🔑 Razorpay credentials loaded:", {
+        keyId: keyId.substring(0, 10) + "..." + keyId.substring(keyId.length - 4),
+        keySecret: "***" + keySecret.substring(keySecret.length - 4),
+    });
     return new razorpay_1.default({
         key_id: keyId,
         key_secret: keySecret,
@@ -63,6 +81,7 @@ function getRazorpayInstance() {
 }
 // ✅ Create Razorpay order
 const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
         const { amount, paidTo, serviceType, serviceReference, description, platformCommission } = req.body;
         const userId = req.userId; // From JWT middleware
@@ -70,6 +89,25 @@ const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             return res.status(400).json({
                 success: false,
                 message: "Amount and paidTo (professional ID) are required"
+            });
+        }
+        if (Number(amount) <= 0) {
+            return res.status(400).json({
+                success: false,
+                message: "Amount must be greater than 0",
+            });
+        }
+        if (!mongoose_1.default.Types.ObjectId.isValid(String(paidTo))) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid professional ID",
+            });
+        }
+        const normalizedServiceType = normalizeServiceType(serviceType);
+        if (serviceType && !normalizedServiceType) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid service type. Must be Nurse, Caretaker, or Compounder",
             });
         }
         // Calculate professional amount if commission is specified
@@ -83,11 +121,12 @@ const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             notes: {
                 paidBy: userId,
                 paidTo: paidTo,
-                serviceType: serviceType || "",
+                serviceType: normalizedServiceType || "",
             },
         };
         const razorpay = getRazorpayInstance();
         const order = yield razorpay.orders.create(options);
+        console.log("✅ Razorpay order created successfully:", order.id);
         yield payments_1.default.create({
             razorpay_order_id: order.id,
             amount,
@@ -95,7 +134,7 @@ const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
             status: "created",
             paidBy: userId,
             paidTo,
-            serviceType,
+            serviceType: normalizedServiceType,
             serviceReference,
             description,
             platformCommission,
@@ -109,8 +148,23 @@ const createOrder = (req, res) => __awaiter(void 0, void 0, void 0, function* ()
         });
     }
     catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: "Error creating Razorpay order" });
+        console.error("❌ Razorpay order creation failed:", error);
+        const razorpayErrorDescription = (_a = error === null || error === void 0 ? void 0 : error.error) === null || _a === void 0 ? void 0 : _a.description;
+        const message = razorpayErrorDescription ||
+            (error instanceof Error ? error.message : "Error creating Razorpay order");
+        const isAuthenticationError = /authentication failed|invalid api key|unauthorized/i.test(message);
+        console.log("🔍 Error details:", {
+            isAuthenticationError,
+            message,
+            errorType: error instanceof Error ? error.constructor.name : typeof error,
+        });
+        res.status(isAuthenticationError ? 503 : 500).json({
+            success: false,
+            paymentSetupRequired: isAuthenticationError,
+            message: isAuthenticationError
+                ? "Razorpay authentication failed on the server. Booking was saved, but payment could not be started."
+                : message,
+        });
     }
 });
 exports.createOrder = createOrder;

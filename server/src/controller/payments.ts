@@ -22,6 +22,11 @@ function getRazorpayInstance(): Razorpay {
     throw new Error("Razorpay credentials not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your .env file");
   }
 
+  console.log("🔑 Razorpay credentials loaded:", {
+    keyId: keyId.substring(0, 10) + "..." + keyId.substring(keyId.length - 4),
+    keySecret: "***" + keySecret.substring(keySecret.length - 4),
+  });
+
   return new Razorpay({
     key_id: keyId,
     key_secret: keySecret,
@@ -82,6 +87,8 @@ export const createOrder = async (req: Request, res: Response) => {
     const razorpay = getRazorpayInstance();
     const order = await razorpay.orders.create(options);
 
+    console.log("✅ Razorpay order created successfully:", order.id);
+
     await Payment.create({
       razorpay_order_id: order.id,
       amount,
@@ -103,15 +110,26 @@ export const createOrder = async (req: Request, res: Response) => {
       keyId: process.env.RAZORPAY_KEY_ID // Safe to expose key ID
     });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Razorpay order creation failed:", error);
     const razorpayErrorDescription =
       (error as { error?: { description?: string } })?.error?.description;
     const message =
       razorpayErrorDescription ||
       (error instanceof Error ? error.message : "Error creating Razorpay order");
-    res.status(500).json({
-      success: false,
+    const isAuthenticationError = /authentication failed|invalid api key|unauthorized/i.test(message);
+
+    console.log("🔍 Error details:", {
+      isAuthenticationError,
       message,
+      errorType: error instanceof Error ? error.constructor.name : typeof error,
+    });
+
+    res.status(isAuthenticationError ? 503 : 500).json({
+      success: false,
+      paymentSetupRequired: isAuthenticationError,
+      message: isAuthenticationError
+        ? "Razorpay authentication failed on the server. Booking was saved, but payment could not be started."
+        : message,
     });
   }
 };

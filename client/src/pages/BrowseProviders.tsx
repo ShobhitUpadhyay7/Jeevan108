@@ -129,10 +129,10 @@ export default function BrowseProviders() {
     setShowBookingModal(true);
   }
 
-  function handleBookingSuccess() {
+  function handleBookingSuccess(message?: string) {
     setShowBookingModal(false);
     setWorkerToBook(null);
-    alert("Booking created successfully! Check your bookings from the navbar.");
+    alert(message || "Booking created successfully! Check your bookings from the navbar.");
     // Optionally navigate to bookings page
   }
 
